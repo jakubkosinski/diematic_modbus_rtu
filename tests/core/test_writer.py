@@ -323,3 +323,16 @@ async def test_registers_without_a_mask_are_written_without_an_extra_read(rig):
     bus.read_registers = counting
     assert (await writer.apply(SetRequest("setpoint", 20))).ok
     assert reads == [SETPOINT]
+
+
+async def test_a_dhw_setpoint_of_ten_degrees_is_accepted_and_nine_is_not():
+    from diematic.registers.loader import load_map
+
+    regmap = load_map("diematic_isystem")
+    bus, events = FakeBus({672: 400}), EventBus()
+    writer = Writer(bus, regmap, StateStore(regmap), events, FAST)
+    assert (await writer.apply(SetRequest("dhw_day_temp", 10))).ok
+    assert bus.writes == [(672, [100])]
+    bus.writes.clear()
+    refused = await writer.apply(SetRequest("dhw_day_temp", 9))
+    assert not refused.ok and "range" in refused.message and bus.writes == []

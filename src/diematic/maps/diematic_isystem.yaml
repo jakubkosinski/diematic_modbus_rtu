@@ -286,8 +286,8 @@ registers:
 
   # Domestic hot water
   - {<<: *temp_setting, key: dhw_primary_temp, address: 121, name: {pl: Nastawa temp. pierwotnej do przygotowania CWU, en: DHW primary circuit setpoint}, min: 50, max: 95, step: 1, group: dhw}
-  - {<<: *temp_setting, key: dhw_day_temp, address: 672, name: {pl: Zadana temp. CWU w dzień, en: DHW day temperature}, min: 40, max: 65, step: 1, poll: fast, group: dhw}
-  - {<<: *temp_setting, key: dhw_night_temp, address: 673, name: {pl: Zadana temp. CWU w nocy, en: DHW night temperature}, min: 40, max: 65, step: 1, poll: fast, group: dhw}
+  - {<<: *temp_setting, key: dhw_day_temp, address: 672, name: {pl: Zadana temp. CWU w dzień, en: DHW day temperature}, min: 10, max: 65, step: 1, poll: fast, group: dhw}
+  - {<<: *temp_setting, key: dhw_night_temp, address: 673, name: {pl: Zadana temp. CWU w nocy, en: DHW night temperature}, min: 10, max: 65, step: 1, poll: fast, group: dhw}
   - key: dhw_priority
     address: 674
     type: enum

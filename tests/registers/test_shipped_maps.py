@@ -274,3 +274,11 @@ def test_the_isystem_clock_registers_are_read_in_one_block():
 
 def test_leaving_out_the_system_group_also_drops_the_boiler_time():
     assert load_map("diematic_isystem").excluding(["system"]).timestamps == ()
+
+
+@pytest.mark.parametrize("key", ["dhw_day_temp", "dhw_night_temp"])
+def test_the_dhw_setpoints_go_down_to_the_boilers_own_minimum(key):
+    register = load_map("diematic_isystem").get(key)
+    assert (register.min, register.max, register.step) == (10, 65, 1)
+    assert register.codec.encode(10) == [100]
+    assert register.codec.decode([100]) == 10.0
