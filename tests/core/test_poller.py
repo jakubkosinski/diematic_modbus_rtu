@@ -193,3 +193,12 @@ async def test_empty_group_is_a_no_op(group):
     regmap = parse_map({"system": "t", "name": "t", "registers": []})
     poller = Poller(FakeBus({}), regmap, StateStore(regmap), EventBus())
     assert await poller.poll_group(group) is True
+
+
+async def test_availability_is_mirrored_into_the_state_store():
+    regmap = make_map()
+    state = StateStore(regmap)
+    poller = Poller(FakeBus({1: 1, 2: 2, 5: 5}), regmap, state, EventBus())
+    assert state.online is None
+    await poller.poll_group("fast")
+    assert state.online is True

@@ -24,6 +24,7 @@ class StateStore:
     def __init__(self, regmap: RegisterMap) -> None:
         self._regmap = regmap
         self._entries: dict[str, Entry] = {}
+        self.online: bool | None = None
         self._dependents: dict[str, list[DerivedDef]] = defaultdict(list)
         for derived in regmap.derived:
             for term in derived.terms:

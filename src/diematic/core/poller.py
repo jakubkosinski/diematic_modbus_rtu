@@ -146,6 +146,7 @@ class Poller:
         if self.online is online:
             return
         self.online = online
+        self._state.online = online
         logger.log(
             logging.INFO if online else logging.WARNING,
             "boiler is %s",
