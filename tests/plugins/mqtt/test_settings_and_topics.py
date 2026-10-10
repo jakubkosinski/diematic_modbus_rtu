@@ -44,6 +44,15 @@ class TestSettings:
         assert "hunter2-secret" not in str(settings)
         assert "hunter2-secret" not in str(settings.model_dump(mode="json"))
 
+    def test_blank_environment_variables_count_as_unset(self, monkeypatch):
+        monkeypatch.setenv("MQTT_USERNAME", "")
+        monkeypatch.setenv("MQTT_PASSWORD", "")
+        monkeypatch.setenv("MQTT_HOST", "")
+        settings = MqttSettings(username="from-file")
+        assert settings.username == "from-file"
+        assert settings.password is None
+        assert settings.host == "localhost"
+
     def test_topic_prefix_is_normalised(self):
         assert MqttSettings(topic_prefix="/home/heater/").topic_prefix == "home/heater"
 

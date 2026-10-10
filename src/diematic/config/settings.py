@@ -38,7 +38,13 @@ def format_validation_error(exc: ValidationError, prefix: str = "") -> str:
 
 
 class LayeredSettings(BaseSettings):
-    """Base class: values passed in (from the YAML file) rank below environment variables."""
+    """Base class: values passed in (from the YAML file) rank below environment variables.
+
+    Empty environment variables count as unset, so a blank `KEY=` line in an .env file never
+    turns into an empty username or password.
+    """
+
+    model_config = SettingsConfigDict(env_ignore_empty=True)
 
     @classmethod
     def settings_customise_sources(
