@@ -1,0 +1,181 @@
+system: diematic_isystem
+name: De Dietrich Diematic iSystem
+slave_address: 10
+
+templates:
+  temp_measure: &temp_measure {type: temp, kind: measure, unit: "°C", device_class: temperature, state_class: measurement}
+  temp_setting: &temp_setting {type: temp, kind: parameter, unit: "°C", device_class: temperature}
+  room_setpoint: &room_setpoint {min: 5, max: 30, step: 0.5, poll: fast}
+  curve_slope: &curve_slope {type: uint, kind: parameter, scale: 0.1, min: 0, max: 4, step: 0.1}
+  anticipation: &anticipation {type: uint, kind: parameter, scale: 0.1, unit: h, min: 0, max: 10.1, step: 0.1}
+  curve_base: &curve_base {min: 15, max: 90, step: 5}
+  program_select: &program_select {type: enum, kind: parameter, values: {0: P1, 1: P2, 2: P3, 3: P4}}
+  mode_values: &mode_values
+    0: {pl: Ochrona przeciwzamrożeniowa, en: Frost protection}
+    2: {pl: Noc, en: Night}
+    4: {pl: Dzień, en: Day}
+  circuit_modes: &circuit_modes {type: enum, kind: measure, values: *mode_values}
+  forcing_bits: &forcing_bits
+    frost_protection: {bit: 0, name: {pl: Ochrona przeciwzamrożeniowa, en: Frost protection}, writable: true}
+    night: {bit: 1, name: {pl: Noc, en: Night}, writable: true}
+    day: {bit: 2, name: {pl: Dzień, en: Day}, writable: true}
+    auto: {bit: 3, name: {pl: Auto, en: Auto}, writable: true}
+    dhw: {bit: 4, name: {pl: CWU, en: DHW}, writable: true}
+    circuit_until_program_end: {bit: 5, name: {pl: Wymuszenie obiegu do końca programu, en: Circuit forcing until end of program}, writable: true}
+    dhw_until_program_end: {bit: 6, name: {pl: Wymuszenie CWU do końca programu, en: DHW forcing until end of program}, writable: true}
+    all_circuits: {bit: 7, name: {pl: Wymuszenie wszystkich obiegów, en: Forcing applies to all circuits}, writable: true}
+  pool_circuit_types: &pool_circuit_types
+    1: {pl: Bezpośredni, en: Direct}
+    2: {pl: Ogrzewanie podłogowe, en: Floor heating}
+    4: {pl: Basen, en: Swimming pool}
+    10: {pl: Klimakonwektor, en: Fan convector}
+  months: &months
+    1: {pl: Styczeń, en: January}
+    2: {pl: Luty, en: February}
+    3: {pl: Marzec, en: March}
+    4: {pl: Kwiecień, en: April}
+    5: {pl: Maj, en: May}
+    6: {pl: Czerwiec, en: June}
+    7: {pl: Lipiec, en: July}
+    8: {pl: Sierpień, en: August}
+    9: {pl: Wrzesień, en: September}
+    10: {pl: Październik, en: October}
+    11: {pl: Listopad, en: November}
+    12: {pl: Grudzień, en: December}
+
+registers:
+  # Circuit A
+  - {<<: *temp_setting, key: circuit_a_max_flow_temp, address: 299, name: {pl: Maks. temperatura obiegu A, en: Circuit A maximum flow temperature}, min: 30, max: 90, step: 1, group: circuit_a}
+  - {<<: [*temp_setting, *room_setpoint], key: circuit_a_day_temp, address: 650, name: {pl: Temperatura dzień obiegu A, en: Circuit A day temperature}, group: circuit_a}
+  - {<<: [*temp_setting, *room_setpoint], key: circuit_a_night_temp, address: 651, name: {pl: Temperatura noc obiegu A, en: Circuit A night temperature}, group: circuit_a}
+  - {<<: *temp_setting, key: circuit_a_frost_temp, address: 652, name: {pl: Min. dopuszczalna temp. pokojowa obiegu A, en: Circuit A minimum room temperature (frost protection)}, min: 0.5, max: 20, step: 0.5, group: circuit_a}
+  - {key: circuit_a_forcing, address: 653, type: bits, kind: parameter, name: {pl: Wymuszenie obiegu A i CWU, en: Circuit A and DHW forcing}, bits: *forcing_bits, poll: fast, group: circuit_a}
+  - {<<: *curve_slope, key: circuit_a_curve_slope, address: 655, name: {pl: Krzywa grzewcza obiegu A, en: Circuit A heating curve slope}, group: circuit_a}
+  - key: circuit_a_type
+    address: 296
+    type: enum
+    kind: parameter
+    name: {pl: Typ obiegu A, en: Circuit A type}
+    group: circuit_a
+    values:
+      0: {pl: Wyłączony, en: "Off"}
+      1: {pl: Bezpośredni, en: Direct}
+      2: {pl: Ogrzewanie podłogowe, en: Floor heating}
+      5: {pl: Program, en: Program}
+      7: {pl: Wysoka temperatura, en: High temperature}
+      10: {pl: Klimakonwektor, en: Fan convector}
+      11: {pl: CWU, en: DHW}
+      15: {pl: CWU elektryczna, en: Electric DHW}
+  - {<<: *anticipation, key: circuit_a_anticipation, address: 282, name: {pl: Antycypacja obiegu A (10.1 = nie), en: Circuit A anticipation (10.1 = off)}, group: circuit_a}
+  - {<<: [*temp_setting, *curve_base], key: circuit_a_curve_base_day, address: 289, name: {pl: Punkt bazowy krzywej (dzień) obiegu A, en: Circuit A heating curve base point (day)}, group: circuit_a}
+  - {<<: [*temp_setting, *curve_base], key: circuit_a_curve_base_night, address: 290, name: {pl: Punkt bazowy krzywej (noc) obiegu A, en: Circuit A heating curve base point (night)}, group: circuit_a}
+  - {<<: *program_select, key: circuit_a_active_program, address: 231, name: {pl: Aktualny program obiegu A, en: Circuit A active program}, group: circuit_a}
+  - {<<: *temp_measure, key: circuit_a_room_temp, address: 614, name: {pl: Temperatura pokojowa obiegu A, en: Circuit A room temperature}, group: circuit_a}
+  - {<<: *temp_measure, key: circuit_a_calculated_flow_temp, address: 615, name: {pl: Obliczona temp. zasilania obiegu A, en: Circuit A calculated flow temperature}, group: circuit_a}
+  - {<<: *circuit_modes, key: circuit_a_mode, address: 637, name: {pl: Tryb pracy obiegu A, en: Circuit A operating mode}, group: circuit_a}
+
+  # Circuit B
+  - {<<: *temp_setting, key: circuit_b_min_flow_temp, address: 662, name: {pl: Min. temperatura obiegu B, en: Circuit B minimum flow temperature}, min: 10, max: 50, step: 1, group: circuit_b}
+  - {<<: *temp_setting, key: circuit_b_max_flow_temp, address: 663, name: {pl: Maks. temperatura obiegu B, en: Circuit B maximum flow temperature}, min: 20, max: 95, step: 1, group: circuit_b}
+  - {<<: [*temp_setting, *room_setpoint], key: circuit_b_day_temp, address: 656, name: {pl: Temperatura dzień obiegu B, en: Circuit B day temperature}, group: circuit_b}
+  - {<<: [*temp_setting, *room_setpoint], key: circuit_b_night_temp, address: 657, name: {pl: Temperatura noc obiegu B, en: Circuit B night temperature}, group: circuit_b}
+  - {<<: *temp_setting, key: circuit_b_frost_temp, address: 658, name: {pl: Min. dopuszczalna temp. pokojowa obiegu B, en: Circuit B minimum room temperature (frost protection)}, min: 0.5, max: 20, step: 0.1, group: circuit_b}
+  - {key: circuit_b_forcing, address: 659, type: bits, kind: parameter, name: {pl: Wymuszenie obiegu B i CWU, en: Circuit B and DHW forcing}, bits: *forcing_bits, poll: fast, group: circuit_b}
+  - {<<: *curve_slope, key: circuit_b_curve_slope, address: 661, name: {pl: Krzywa grzewcza obiegu B, en: Circuit B heating curve slope}, group: circuit_b}
+  - {key: circuit_b_type, address: 297, type: enum, kind: parameter, name: {pl: Typ obiegu B, en: Circuit B type}, values: *pool_circuit_types, group: circuit_b}
+  - {<<: *temp_setting, key: circuit_b_pool_temp, address: 686, name: {pl: Temperatura basenu obiegu B (0 = ochrona przeciwzamrożeniowa), en: Circuit B pool temperature (0 = frost protection)}, min: 0, max: 39, step: 5, group: circuit_b}
+  - {<<: *anticipation, key: circuit_b_anticipation, address: 283, name: {pl: Antycypacja obiegu B (10.1 = nie), en: Circuit B anticipation (10.1 = off)}, group: circuit_b}
+  - {<<: [*temp_setting, *curve_base], key: circuit_b_curve_base_day, address: 291, name: {pl: Punkt bazowy krzywej (dzień) obiegu B, en: Circuit B heating curve base point (day)}, group: circuit_b}
+  - {<<: [*temp_setting, *curve_base], key: circuit_b_curve_base_night, address: 292, name: {pl: Punkt bazowy krzywej (noc) obiegu B, en: Circuit B heating curve base point (night)}, group: circuit_b}
+  - {<<: *program_select, key: circuit_b_active_program, address: 232, name: {pl: Aktualny program obiegu B, en: Circuit B active program}, group: circuit_b}
+  - {<<: *temp_measure, key: circuit_b_flow_temp, address: 605, name: {pl: Temperatura zasilania obiegu B, en: Circuit B flow temperature}, group: circuit_b}
+  - {<<: *temp_measure, key: circuit_b_room_temp, address: 616, name: {pl: Temperatura pokojowa obiegu B, en: Circuit B room temperature}, group: circuit_b}
+  - {<<: *temp_measure, key: circuit_b_calculated_flow_temp, address: 617, name: {pl: Obliczona temp. zasilania obiegu B, en: Circuit B calculated flow temperature}, group: circuit_b}
+  - {<<: *circuit_modes, key: circuit_b_mode, address: 638, name: {pl: Tryb pracy obiegu B, en: Circuit B operating mode}, group: circuit_b}
+
+  # Circuit C
+  - {<<: *temp_setting, key: circuit_c_min_flow_temp, address: 670, name: {pl: Min. temperatura obiegu C, en: Circuit C minimum flow temperature}, min: 10, max: 50, step: 1, group: circuit_c}
+  - {<<: *temp_setting, key: circuit_c_max_flow_temp, address: 671, name: {pl: Maks. temperatura obiegu C, en: Circuit C maximum flow temperature}, min: 20, max: 95, step: 1, group: circuit_c}
+  - {<<: [*temp_setting, *room_setpoint], key: circuit_c_day_temp, address: 664, name: {pl: Temperatura dzień obiegu C, en: Circuit C day temperature}, group: circuit_c}
+  - {<<: [*temp_setting, *room_setpoint], key: circuit_c_night_temp, address: 665, name: {pl: Temperatura noc obiegu C, en: Circuit C night temperature}, group: circuit_c}
+  - {<<: *temp_setting, key: circuit_c_frost_temp, address: 666, name: {pl: Min. dopuszczalna temp. pokojowa obiegu C, en: Circuit C minimum room temperature (frost protection)}, min: 0.5, max: 20, step: 0.1, group: circuit_c}
+  - {key: circuit_c_forcing, address: 667, type: bits, kind: parameter, name: {pl: Wymuszenie obiegu C i CWU, en: Circuit C and DHW forcing}, bits: *forcing_bits, poll: fast, group: circuit_c}
+  - {<<: *curve_slope, key: circuit_c_curve_slope, address: 669, name: {pl: Krzywa grzewcza obiegu C, en: Circuit C heating curve slope}, group: circuit_c}
+  - {key: circuit_c_type, address: 360, type: enum, kind: parameter, name: {pl: Typ obiegu C, en: Circuit C type}, values: *pool_circuit_types, group: circuit_c}
+  - {<<: *temp_setting, key: circuit_c_pool_temp, address: 687, name: {pl: Temperatura basenu obiegu C (0 = ochrona przeciwzamrożeniowa), en: Circuit C pool temperature (0 = frost protection)}, min: 0, max: 39, step: 5, group: circuit_c}
+  - {<<: *anticipation, key: circuit_c_anticipation, address: 284, name: {pl: Antycypacja obiegu C (10.1 = nie), en: Circuit C anticipation (10.1 = off)}, group: circuit_c}
+  - {<<: [*temp_setting, *curve_base], key: circuit_c_curve_base_day, address: 358, name: {pl: Punkt bazowy krzywej (dzień) obiegu C, en: Circuit C heating curve base point (day)}, group: circuit_c}
+  - {<<: [*temp_setting, *curve_base], key: circuit_c_curve_base_night, address: 359, name: {pl: Punkt bazowy krzywej (noc) obiegu C, en: Circuit C heating curve base point (night)}, group: circuit_c}
+  - {<<: *program_select, key: circuit_c_active_program, address: 233, name: {pl: Aktualny program obiegu C, en: Circuit C active program}, group: circuit_c}
+  - {<<: *temp_measure, key: circuit_c_flow_temp, address: 606, name: {pl: Temperatura zasilania obiegu C, en: Circuit C flow temperature}, group: circuit_c}
+  - {<<: *temp_measure, key: circuit_c_room_temp, address: 618, name: {pl: Temperatura pokojowa obiegu C, en: Circuit C room temperature}, group: circuit_c}
+  - {<<: *temp_measure, key: circuit_c_calculated_flow_temp, address: 619, name: {pl: Obliczona temp. zasilania obiegu C, en: Circuit C calculated flow temperature}, group: circuit_c}
+  - {<<: *circuit_modes, key: circuit_c_mode, address: 639, name: {pl: Tryb pracy obiegu C, en: Circuit C operating mode}, group: circuit_c}
+
+  # Domestic hot water
+  - {<<: *temp_setting, key: dhw_primary_temp, address: 121, name: {pl: Nastawa temp. pierwotnej do przygotowania CWU, en: DHW primary circuit setpoint}, min: 50, max: 95, step: 1, group: dhw}
+  - {<<: *temp_setting, key: dhw_day_temp, address: 672, name: {pl: Zadana temp. CWU w dzień, en: DHW day temperature}, min: 40, max: 65, step: 1, poll: fast, group: dhw}
+  - {<<: *temp_setting, key: dhw_night_temp, address: 673, name: {pl: Zadana temp. CWU w nocy, en: DHW night temperature}, min: 40, max: 65, step: 1, poll: fast, group: dhw}
+  - key: dhw_priority
+    address: 674
+    type: enum
+    kind: parameter
+    name: {pl: Priorytet CWU, en: DHW priority}
+    group: dhw
+    values:
+      0: {pl: Całkowity, en: Total}
+      1: {pl: Ślizgowy, en: Sliding}
+      2: {pl: Nie, en: None}
+  - {key: dhw_pump_overrun, address: 61, type: uint, kind: parameter, name: {pl: Opóźnienie wyłączenia pompy CWU, en: DHW pump overrun time}, unit: min, min: 2, max: 15, step: 1, group: dhw}
+  - key: dhw_anti_legionella
+    address: 268
+    type: enum
+    kind: parameter
+    name: {pl: Ochrona antylegionella, en: Anti-legionella protection}
+    group: dhw
+    values:
+      0: {pl: Nie, en: "Off"}
+      1: {pl: Codziennie, en: Daily}
+      2: {pl: Co tydzień, en: Weekly}
+  - {<<: *temp_measure, key: dhw_temp, address: 603, name: {pl: Temperatura CWU, en: DHW temperature}, group: dhw}
+  - {<<: *circuit_modes, key: dhw_mode, address: 640, name: {pl: Tryb pracy obiegu CWU, en: DHW operating mode}, group: dhw}
+
+  # Auxiliary circuit
+  - key: system_input_function
+    address: 741
+    type: enum
+    kind: parameter
+    name: {pl: Funkcja wejścia systemowego, en: System input function}
+    group: aux
+    values:
+      0: {pl: Wyłączone, en: "Off"}
+      1: {pl: System, en: System}
+      2: {pl: Bufor, en: Buffer}
+      3: {pl: CWU warstwowa, en: Stratified DHW}
+      4: {pl: Bufor + CWU, en: Buffer + DHW}
+  - key: aux_circuit_type
+    address: 744
+    type: enum
+    kind: parameter
+    name: {pl: Typ obiegu AUX, en: AUX circuit type}
+    group: aux
+    values:
+      3: {pl: Cyrkulacja CWU, en: DHW circulation}
+      5: {pl: Program, en: Program}
+      8: {pl: Pompa pierwotna, en: Primary pump}
+      9: {pl: Sterowanie palnikiem, en: Burner control}
+      11: {pl: CWU, en: DHW}
+      13: {pl: Błąd, en: Fault}
+      15: {pl: CWU elektryczna, en: Electric DHW}
+      16: {pl: Chłodzenie, en: Cooling}
+      17: {pl: Pompa VM, en: VM pump}
+      18: {pl: Błąd kaskady, en: Cascade fault}
+  - {<<: *temp_measure, key: system_temp, address: 622, name: {pl: Temperatura zasilania systemu, en: System flow temperature}, group: aux}
+  - {<<: *circuit_modes, key: aux_mode, address: 641, name: {pl: Tryb pracy obiegu AUX, en: AUX operating mode}, group: aux}
+
+time_programs:
+  - {key: circuit_a_program, name: {pl: Program czasowy P4 obiegu A, en: Circuit A time program P4}, address: 126}
+  - {key: circuit_b_program, name: {pl: Program czasowy P4 obiegu B, en: Circuit B time program P4}, address: 147}
+  - {key: circuit_c_program, name: {pl: Program czasowy P4 obiegu C, en: Circuit C time program P4}, address: 168}
+  - {key: dhw_program, name: {pl: Program czasowy CWU, en: DHW time program}, address: 189}
+  - {key: aux_program, name: {pl: Program czasowy AUX, en: AUX time program}, address: 210}
