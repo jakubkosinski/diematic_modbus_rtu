@@ -65,6 +65,7 @@ class RegisterDef(_Strict):
     max: float | None = None
     step: float | None = Field(default=None, gt=0)
     invalid: list[int] | None = None
+    mask: int | None = Field(default=None, ge=1, le=0xFFFF)
     values: dict[int, Localized] | None = None
     bits: dict[str, BitDef] | None = None
     poll: Literal["fast", "slow"] | None = None
@@ -85,6 +86,8 @@ class RegisterDef(_Strict):
             raise ValueError("'values' is only valid for enum registers")
         if self.type != "bits" and self.bits is not None:
             raise ValueError("'bits' is only valid for bits registers")
+        if self.mask is not None and self.type not in {"uint", "enum"}:
+            raise ValueError("'mask' is only valid for uint and enum registers")
         if self.kind == "measure" and self.writable:
             raise ValueError("measures are read-only")
         if self.min is not None and self.max is not None and self.min > self.max:
@@ -119,9 +122,13 @@ class RegisterDef(_Strict):
                 invalid = [0xFFFF] if self.invalid is None else self.invalid
                 return TempCodec(scale=self.scale or 0.1, invalid=frozenset(invalid))
             case "uint":
-                return UintCodec(scale=self.scale or 1, invalid=frozenset(self.invalid or []))
+                return UintCodec(
+                    scale=self.scale or 1,
+                    invalid=frozenset(self.invalid or []),
+                    mask=self.mask or 0xFFFF,
+                )
             case "enum":
-                return EnumCodec(dict(self.values or {}))
+                return EnumCodec(dict(self.values or {}), mask=self.mask or 0xFFFF)
             case "bits":
                 return BitsCodec({name: b.bit for name, b in (self.bits or {}).items()})
             case _:

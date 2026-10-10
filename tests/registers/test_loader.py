@@ -371,3 +371,41 @@ def test_a_time_program_joins_the_group_given_in_the_map_or_forms_its_own():
     assert loaded.get("alone_monday").group == "alone"
     assert loaded.get("member_monday").group == "circuit_a"
     assert not [r for r in loaded.excluding(["circuit_a"]).registers if r.key.startswith("member")]
+
+
+def test_mask_is_accepted_on_enum_and_uint_registers_only():
+    base = {"key": "a", "address": 1, "kind": "measure", "name": "A"}
+    parse_map(
+        raw_with(registers=[{**base, "type": "uint", "mask": 255}], time_programs=[], derived=[])
+    )
+    parse_map(
+        raw_with(
+            registers=[{**base, "type": "enum", "mask": 3, "values": {0: "x"}}],
+            time_programs=[],
+            derived=[],
+        )
+    )
+    for kind in ("temp", "bits", "time_program"):
+        extra = {"bits": {"p": {"bit": 1, "name": "p"}}} if kind == "bits" else {}
+        with pytest.raises(MapError, match="mask"):
+            parse_map(
+                raw_with(
+                    registers=[{**base, "type": kind, "mask": 3, **extra}],
+                    time_programs=[],
+                    derived=[],
+                )
+            )
+
+
+@pytest.mark.parametrize("mask", [0, 65536, -1])
+def test_mask_must_fit_in_a_register(mask):
+    register = {
+        "key": "a",
+        "address": 1,
+        "type": "uint",
+        "kind": "measure",
+        "name": "A",
+        "mask": mask,
+    }
+    with pytest.raises(MapError):
+        parse_map(raw_with(registers=[register], time_programs=[], derived=[]))

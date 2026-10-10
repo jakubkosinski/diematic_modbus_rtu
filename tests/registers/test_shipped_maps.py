@@ -191,3 +191,13 @@ def test_anticipation_is_in_degree_hours_with_off_above_ten():
         assert register.unit == "°dH"
         assert register.codec.decode([101]) == 10.1
         assert (register.min, register.max, register.step) == (0, 10.1, 0.1)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [(0, "P1"), (8192, "P1"), (8193, "P2"), (8194, "P3"), (8195, "P4"), (3, "P4")],
+)
+@pytest.mark.parametrize("circuit", ["a", "b", "c"])
+def test_the_active_program_ignores_the_high_flag_bit(circuit, raw, expected):
+    register = load_map("diematic_isystem").get(f"circuit_{circuit}_active_program")
+    assert register.codec.decode([raw]) == expected

@@ -9,7 +9,7 @@ templates:
   curve_slope: &curve_slope {type: uint, kind: parameter, scale: 0.1, min: 0, max: 4, step: 0.1}
   anticipation: &anticipation {type: uint, kind: parameter, scale: 0.1, unit: "°dH", min: 0, max: 10.1, step: 0.1}
   curve_base: &curve_base {min: 15, max: 90, step: 5}
-  program_select: &program_select {type: enum, kind: parameter, values: {0: P1, 1: P2, 2: P3, 3: P4}}
+  program_select: &program_select {type: enum, kind: parameter, mask: 3, values: {0: P1, 1: P2, 2: P3, 3: P4}}
   mode_values: &mode_values
     0: {pl: Ochrona przeciwzamrożeniowa, en: Frost protection}
     2: {pl: Noc, en: Night}

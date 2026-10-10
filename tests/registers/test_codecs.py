@@ -124,3 +124,23 @@ class TestTimeProgram:
     def test_invalid_periods(self, text):
         with pytest.raises(CodecError):
             self.codec.encode(text)
+
+
+class TestMask:
+    def test_enum_ignores_the_masked_out_bits(self):
+        codec = EnumCodec({0: "P1", 1: "P2", 2: "P3", 3: "P4"}, mask=3)
+        assert codec.decode([8192]) == "P1"
+        assert codec.decode([8193]) == "P2"
+        assert codec.decode([0x2003]) == "P4"
+
+    def test_without_a_mask_the_whole_word_counts(self):
+        codec = EnumCodec({0: "P1"})
+        assert codec.decode([8192]) is None
+
+    def test_uint_applies_the_mask_after_the_unavailable_marker(self):
+        codec = UintCodec(mask=0x00FF, invalid=frozenset({0xFFFF}))
+        assert codec.decode([0x1234]) == 0x34
+        assert codec.decode([0xFFFF]) is None
+
+    def test_encoding_is_not_affected_by_the_mask(self):
+        assert EnumCodec({2: "P3"}, mask=3).encode("P3") == [2]

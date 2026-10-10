@@ -74,9 +74,12 @@ class UintCodec:
     scale: float = 1
     invalid: frozenset[int] = frozenset()
     width: int = 1
+    mask: int = 0xFFFF
 
     def decode(self, words: Sequence[int]) -> Value:
-        return None if words[0] in self.invalid else _scaled(words[0], self.scale)
+        if words[0] in self.invalid:
+            return None
+        return _scaled(words[0] & self.mask, self.scale)
 
     def encode(self, value: Value) -> list[int]:
         raw = round(_to_number(value) / self.scale)
@@ -89,13 +92,14 @@ class UintCodec:
 class EnumCodec:
     options: Mapping[int, str]
     width: int = 1
+    mask: int = 0xFFFF
     _by_label: dict[str, int] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "_by_label", {label: raw for raw, label in self.options.items()})
 
     def decode(self, words: Sequence[int]) -> Value:
-        return self.options.get(words[0])
+        return self.options.get(words[0] & self.mask)
 
     def encode(self, value: Value) -> list[int]:
         if isinstance(value, str) and value in self._by_label:

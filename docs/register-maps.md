@@ -59,6 +59,7 @@ composites: []                 # thermostats built from registers
 | `type: enum` | `values: {raw: label}`; unknown raw values read as no value. |
 | `type: bits` | `bits: {flag: {bit: 3, name: ..., writable: true}}`. Flags become binary sensors or switches. |
 | `writable` | Defaults to `kind: parameter`. A measure cannot be writable. |
+| `mask` | For `uint` and `enum`: bits to keep when reading, e.g. `mask: 3`. Other bits are ignored on read and preserved when the register is written. The active-program registers use it: a boiler reports `8192` for P1. |
 | `name`, enum labels, bit names | Plain text, or `{pl: ..., en: ...}`. The configured language is used, English as fallback. |
 
 Writes are validated: a number outside `min`..`max` is **rejected** (not clamped) and one that is
