@@ -101,3 +101,22 @@ def test_isystem_every_writable_numeric_register_has_limits():
         if register.is_writable and register.type in {"temp", "uint"}:
             assert register.min is not None and register.max is not None, register.key
             assert register.step is not None, register.key
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (0xFFFF, "No error"),
+        (0x0000, "D3: Flow sensor B fault"),
+        (0x080F, "B16: False flame"),
+        (0x1017, "No water 250"),
+        (0x1814, "L250: No water"),
+        (0x2019, "L32: Lockout: user reset"),
+    ],
+)
+def test_isystem_error_codes_cover_every_boiler_family(raw, expected):
+    assert load_map("diematic_isystem").get("boiler_error").codec.decode([raw]) == expected
+
+
+def test_isystem_unknown_error_code_decodes_to_none():
+    assert load_map("diematic_isystem").get("boiler_error").codec.decode([0x0F00]) is None

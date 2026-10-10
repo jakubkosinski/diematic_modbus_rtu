@@ -79,6 +79,142 @@ templates:
     37: C230
     40: Robur HP
 
+  boiler_errors: &boiler_errors
+    0x0000: {pl: "D3: BŁ.CZ.ZASIL. B", en: "D3: Flow sensor B fault"}
+    0x0001: {pl: "D4: BŁ.CZ.ZASIL. C", en: "D4: Flow sensor C fault"}
+    0x0002: {pl: "D5: BŁ.CZ.ZEWN.", en: "D5: Outdoor sensor fault"}
+    0x0003: {pl: "D7: BŁ.CZ.SYSTEMU", en: "D7: System sensor fault"}
+    0x0004: {pl: "D9: BŁ.CZ.CWU", en: "D9: DHW sensor fault"}
+    0x0005: {pl: "D11: BŁ.CZ.POKOJ. A", en: "D11: Room sensor A fault"}
+    0x0006: {pl: "D12: BŁ.CZ.POKOJ. B", en: "D12: Room sensor B fault"}
+    0x0007: {pl: "D13: BŁ.CZ.POKOJ. C", en: "D13: Room sensor C fault"}
+    0x0008: {pl: "D14: BŁ.KOM. MC", en: "D14: MC communication fault"}
+    0x0009: {pl: "D15: BŁ.CZ.BUFORA", en: "D15: Buffer sensor fault"}
+    0x000A: {pl: "D16: BŁ.CZ.BASENU B", en: "D16: Pool sensor B fault"}
+    0x000B: {pl: "D16: BŁ.CZ.BASENU C", en: "D16: Pool sensor C fault"}
+    0x000C: {pl: "D17: BŁ.CZ.CWU 2", en: "D17: DHW sensor 2 fault"}
+    0x000D: {pl: "D27: BŁ.KOM. PCU", en: "D27: PCU communication fault"}
+    0x0012: {pl: "D32: 5 RESETÓW WŁ/WYŁ", en: "D32: 5 ON/OFF resets"}
+    0x0013: {pl: "D37: TA-S ZWARCIE", en: "D37: TA-S short circuit"}
+    0x0014: {pl: "D38: TA-S ODŁĄCZONA", en: "D38: TA-S disconnected"}
+    0x0015: {pl: "D39: TA-S AWARIA", en: "D39: TA-S failure"}
+    0x0016: {pl: "D50: BŁ.KOM. INNE", en: "D50: Other communication fault"}
+    0x0017: {pl: "D51: BŁĄD: PATRZ KOCIOŁ", en: "D51: Error: see boiler"}
+    0x0018: {pl: "D18: BŁ.CZ.CWU SOLAR", en: "D18: Solar DHW sensor fault"}
+    0x0019: {pl: "D19: BŁ.CZ.KOLEKTORA", en: "D19: Collector sensor fault"}
+    0x001A: {pl: "D20: BŁ.KOM. SOLAR", en: "D20: Solar communication fault"}
+    0x001B: {pl: "D99: NIEPRAWIDŁOWA PCU", en: "D99: Invalid PCU"}
+    0x001C: {pl: "D40: NIEZNANY BŁĄD", en: "D40: Unknown error"}
+    0x001D: {pl: "D254: NIEZNANY BŁĄD", en: "D254: Unknown error"}
+    0x0800: {pl: "B0: BŁĄD PSU", en: "B0: PSU error"}
+    0x0801: {pl: "B1: BŁĄD PARAM. PSU", en: "B1: PSU parameter error"}
+    0x0802: {pl: "B2: BŁ.CZ.WYMIENNIKA", en: "B2: Heat exchanger sensor fault"}
+    0x0803: {pl: "B3: BŁ.CZ.WYMIENNIKA", en: "B3: Heat exchanger sensor fault"}
+    0x0804: {pl: "B4: BŁ.CZ.WYMIENNIKA", en: "B4: Heat exchanger sensor fault"}
+    0x0805: {pl: "B5: STB WYMIENNIKA", en: "B5: Heat exchanger STB"}
+    0x0806: {pl: "B6: BŁ.CZ.POWROTU", en: "B6: Return sensor fault"}
+    0x0807: {pl: "B7: BŁ.CZ.POWROTU", en: "B7: Return sensor fault"}
+    0x0808: {pl: "B8: BŁ.CZ.POWROTU", en: "B8: Return sensor fault"}
+    0x0809: {pl: "B9: STB POWROTU", en: "B9: Return STB"}
+    0x080A: {pl: "B10: BŁ.ΔT WYMIENN.-POWR.", en: "B10: Heat exchanger-return delta T error"}
+    0x080B: {pl: "B11: BŁ.ΔT POWR.-WYMIENN.", en: "B11: Return-heat exchanger delta T error"}
+    0x080C: {pl: "B12: STB OTWARTY", en: "B12: STB open"}
+    0x080D: {pl: "B14: AWARIA PALNIKA", en: "B14: Burner failure"}
+    0x080E: {pl: "B15: BŁĄD TESTU CCE", en: "B15: CCE test error"}
+    0x080F: {pl: "B16: FAŁSZYWY PŁOMIEŃ", en: "B16: False flame"}
+    0x0810: {pl: "B17: BŁĄD ZAWORU", en: "B17: Valve error"}
+    0x0811: {pl: "B32: BŁ.CZ.ZASILANIA", en: "B32: Flow sensor fault"}
+    0x0812: {pl: "B33: BŁ.CZ.ZASILANIA", en: "B33: Flow sensor fault"}
+    0x0813: {pl: "B34: AWARIA WENTYLATORA", en: "B34: Fan failure"}
+    0x0814: {pl: "B35: BŁĄD POWRÓT>KOCIOŁ", en: "B35: Return > boiler error"}
+    0x0815: {pl: "B36: BŁĄD PRĄDU JONIZ.", en: "B36: Ionization current error"}
+    0x0816: {pl: "B37: BŁ.KOM. SU", en: "B37: SU communication fault"}
+    0x0817: {pl: "B38: BŁ.KOM. PCU", en: "B38: PCU communication fault"}
+    0x0818: {pl: "B39: BŁĄD OTWARCIA BL", en: "B39: BL opening error"}
+    0x0819: {pl: "B255: NIEZNANY BŁĄD", en: "B255: Unknown error"}
+    0x081A: {pl: "B254: NIEZNANY BŁĄD", en: "B254: Unknown error"}
+    0x1000: {pl: "BŁĄD PSU 00", en: "PSU error 00"}
+    0x1001: {pl: "BŁĄD PARAM. PSU 01", en: "PSU parameter error 01"}
+    0x1002: {pl: "BŁ.CZ.ZASILANIA 02", en: "Flow sensor fault 02"}
+    0x1003: {pl: "BŁ.CZ.ZASILANIA 03", en: "Flow sensor fault 03"}
+    0x1004: {pl: "BŁ.CZ.ZASILANIA 04", en: "Flow sensor fault 04"}
+    0x1005: {pl: "STB ZASILANIA 05", en: "Flow STB 05"}
+    0x1006: {pl: "BŁ.CZ.POWROTU 06", en: "Return sensor fault 06"}
+    0x1007: {pl: "BŁ.CZ.POWROTU 07", en: "Return sensor fault 07"}
+    0x1008: {pl: "BŁ.CZ.POWROTU 08", en: "Return sensor fault 08"}
+    0x1009: {pl: "STB POWROTU 09", en: "Return STB 09"}
+    0x100A: {pl: "ΔT ZAS.-POWR.<MIN 10", en: "Flow-return delta T below minimum 10"}
+    0x100B: {pl: "ΔT ZAS.-POWR.>MAX 11", en: "Flow-return delta T above maximum 11"}
+    0x100C: {pl: "STB OTWARTY 12", en: "STB open 12"}
+    0x100D: {pl: "AWARIA PALNIKA 14", en: "Burner failure 14"}
+    0x100E: {pl: "FAŁSZYWY PŁOMIEŃ 16", en: "False flame 16"}
+    0x100F: {pl: "BŁĄD ZAWORU 17", en: "Valve error 17"}
+    0x1010: {pl: "AWARIA WENTYLATORA 34", en: "Fan failure 34"}
+    0x1011: {pl: "BŁĄD POWRÓT>KOCIOŁ 35", en: "Return > boiler error 35"}
+    0x1012: {pl: "BŁĄD PRĄDU JONIZ. 36", en: "Ionization current error 36"}
+    0x1013: {pl: "BŁ.KOM. SU 37", en: "SU communication fault 37"}
+    0x1014: {pl: "BŁ.KOM. PCU 38", en: "PCU communication fault 38"}
+    0x1015: {pl: "BŁĄD OTWARCIA BL 39", en: "BL opening error 39"}
+    0x1016: {pl: "BŁĄD TESTU HRU 40", en: "HRU test error 40"}
+    0x1017: {pl: "BRAK WODY 250", en: "No water 250"}
+    0x1018: {pl: "BŁĄD MANOMETRU 251", en: "Pressure gauge error 251"}
+    0x1019: {pl: "NIEZNANY BŁĄD 255", en: "Unknown error 255"}
+    0x101A: {pl: "NIEZNANY BŁĄD 254", en: "Unknown error 254"}
+    0x1800: {pl: "L0: BŁĄD PSU", en: "L0: PSU error"}
+    0x1801: {pl: "L1: BŁĄD PARAM. PSU", en: "L1: PSU parameter error"}
+    0x1802: {pl: "L2: STB ZASILANIA", en: "L2: Flow STB"}
+    0x1803: {pl: "L3: BŁ.CZ.OLEJU", en: "L3: Oil sensor fault"}
+    0x1804: {pl: "L4: AWARIA PALNIKA", en: "L4: Burner failure"}
+    0x1805: {pl: "L5: BŁĄD WEWNĘTRZNY", en: "L5: Internal error"}
+    0x1806: {pl: "L6: BŁĄD PRĘDK. SILNIKA", en: "L6: Motor speed error"}
+    0x1807: {pl: "L7: BŁĄD CZASU NAGRZEW.", en: "L7: Preheating time error"}
+    0x1808: {pl: "L8: FAŁSZYWY PŁOMIEŃ", en: "L8: False flame"}
+    0x1809: {pl: "L9: BŁĄD CIŚN. OLEJU", en: "L9: Oil pressure error"}
+    0x180A: {pl: "L30: BŁĄD CIŚN. SPALIN", en: "L30: Flue gas pressure error"}
+    0x180B: {pl: "L31: BŁĄD TEMP. SPALIN", en: "L31: Flue gas temperature error"}
+    0x180C: {pl: "L32: BŁ.CZ.ZASILANIA", en: "L32: Flow sensor fault"}
+    0x180D: {pl: "L33: BŁ.CZ.ZASILANIA", en: "L33: Flow sensor fault"}
+    0x180E: {pl: "L34: BŁ.CZ.POWROTU", en: "L34: Return sensor fault"}
+    0x180F: {pl: "L35: BŁ.CZ.POWROTU", en: "L35: Return sensor fault"}
+    0x1810: {pl: "L36: ZANIK PŁOMIENIA", en: "L36: Flame loss"}
+    0x1811: {pl: "L37: BŁ.KOM. SU", en: "L37: SU communication fault"}
+    0x1812: {pl: "L38: BŁ.KOM. PCU", en: "L38: PCU communication fault"}
+    0x1813: {pl: "L39: BŁĄD OTWARCIA BL", en: "L39: BL opening error"}
+    0x1814: {pl: "L250: BRAK WODY", en: "L250: No water"}
+    0x1815: {pl: "L251: BŁĄD MANOMETRU", en: "L251: Pressure gauge error"}
+    0x1816: {pl: "L255: NIEZNANY BŁĄD", en: "L255: Unknown error"}
+    0x1817: {pl: "L254: NIEZNANY BŁĄD", en: "L254: Unknown error"}
+    0x2000: {pl: "L1: BŁĄD SPRĘŻARKI PC", en: "L1: Heat pump compressor error"}
+    0x2001: {pl: "L2: BŁĄD ZAWORU 4-DR. PC", en: "L2: Heat pump 4-way valve error"}
+    0x2002: {pl: "L3: BŁĄD POMPY PC", en: "L3: Heat pump pump error"}
+    0x2003: {pl: "L4: PC POZA ZAKRESEM", en: "L4: Heat pump out of range"}
+    0x2004: {pl: "L5: BŁĄD PRZEPŁYWU PC 6", en: "L5: Heat pump flow error 6"}
+    0x2005: {pl: "L6: BŁĄD PRZEPŁYWU PC 8", en: "L6: Heat pump flow error 8"}
+    0x2006: {pl: "L7: BŁ.KOM. PC", en: "L7: Heat pump communication fault"}
+    0x2007: {pl: "L8: BŁ.CZ.GORĄCEGO GAZU PC", en: "L8: Heat pump hot gas sensor fault"}
+    0x2008: {pl: "L9: BŁĄD WYS.CIŚN. PC", en: "L9: Heat pump high pressure error"}
+    0x2009: {pl: "L10: BŁĄD NISK.CIŚN. PC", en: "L10: Heat pump low pressure error"}
+    0x200A: {pl: "L11: BŁĄD CIŚN. ŹRÓDŁA", en: "L11: Source pressure error"}
+    0x200B: {pl: "L12: PRZECIWZAMR. ŹRÓDŁA", en: "L12: Source frost protection"}
+    0x200C: {pl: "L13: BŁĄD POMPY ŹRÓDŁA", en: "L13: Source pump error"}
+    0x200D: {pl: "L14: PRZECIWZAMR. SKRAPLACZA", en: "L14: Condenser frost protection"}
+    0x200E: {pl: "L15: BŁĄD ODSZRANIANIA", en: "L15: Defrost error"}
+    0x200F: {pl: "L16: BŁĄD ZABEZP. SILNIKA", en: "L16: Motor protection error"}
+    0x2010: {pl: "L17: BŁ.CZ.GORĄCEGO GAZU", en: "L17: Hot gas sensor fault"}
+    0x2011: {pl: "L18: BŁ.KOM. PC", en: "L18: Heat pump communication fault"}
+    0x2012: {pl: "L19: BŁ.CZ.ZASIL. PC", en: "L19: Heat pump flow sensor fault"}
+    0x2013: {pl: "L20: BŁ.CZ.POWROTU PC", en: "L20: Heat pump return sensor fault"}
+    0x2014: {pl: "L21: BŁ.CZ.POWIETRZA WLOT", en: "L21: Air inlet sensor fault"}
+    0x2015: {pl: "L22: BŁ.CZ.POWIETRZA WYLOT", en: "L22: Air outlet sensor fault"}
+    0x2016: {pl: "L23: BŁ.CZ.ROZPRĘŻ. GAZU", en: "L23: Expanded gas sensor fault"}
+    0x2017: {pl: "L24: BŁ.CZ.PAROWNIKA PC", en: "L24: Heat pump evaporator sensor fault"}
+    0x2018: {pl: "L25: BŁ.CZ.SKRAPLACZA PC", en: "L25: Heat pump condenser sensor fault"}
+    0x2019: {pl: "L32: BLOKADA: RESET UŻYTK.", en: "L32: Lockout: user reset"}
+    0x201A: {pl: "L33: BŁĄD PRZEPŁYWU", en: "L33: Flow error"}
+    0x201B: {pl: "L255: NIEZNANY BŁĄD", en: "L255: Unknown error"}
+    0x201C: {pl: "L254: NIEZNANY BŁĄD", en: "L254: Unknown error"}
+    0xFFFF: {pl: Brak błędu, en: No error}
+
 registers:
   # Circuit A
   - {<<: *temp_setting, key: circuit_a_max_flow_temp, address: 299, name: {pl: Maks. temperatura obiegu A, en: Circuit A maximum flow temperature}, min: 30, max: 90, step: 1, group: circuit_a}
@@ -378,6 +514,7 @@ registers:
   # Service information
   - {key: energy_counters_enabled, address: 787, type: enum, kind: parameter, name: {pl: Włączenie funkcji liczników energii, en: Energy counters enabled}, values: {0: {pl: Nie, en: "No"}, 1: {pl: Tak, en: "Yes"}}, group: service}
   - {key: controller_software_version, address: 600, type: uint, kind: measure, name: {pl: Wersja oprogramowania regulatora, en: Controller software version}, group: service}
+  - {key: boiler_error, address: 465, type: enum, kind: measure, name: {pl: Błąd kotła, en: Boiler error}, values: *boiler_errors, group: service}
   - {key: error_active, address: 500, type: enum, kind: measure, name: {pl: Błąd aktywny, en: Error active}, values: {0: {pl: Brak błędu, en: No error}, 1: {pl: Błąd, en: Error}}, group: service}
   - {key: pcu_blocking, address: 712, type: uint, kind: measure, name: {pl: Blokowanie PCU, en: PCU blocking}, group: heat_pump, enabled_by_default: false}
   - {key: pcu_lockout, address: 713, type: uint, kind: measure, name: {pl: Blokada PCU, en: PCU lockout}, group: heat_pump, enabled_by_default: false}
