@@ -1,5 +1,5 @@
 name: Diematic Modbus
-version: "0.1.0"
+version: "0.2.0"
 slug: diematic_modbus
 description: De Dietrich Diematic iSystem boilers in Home Assistant over Modbus RTU and MQTT
 url: https://github.com/jakubkosinski/diematic_modbus_rtu
