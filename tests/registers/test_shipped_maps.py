@@ -182,3 +182,12 @@ def test_excluding_a_circuit_also_removes_its_weekly_program():
     reduced = load_map("diematic_isystem").excluding(["circuit_c"])
     assert not [r for r in reduced.registers if "circuit_c" in r.key]
     assert "circuit_a_program_monday" in reduced
+
+
+def test_anticipation_is_in_degree_hours_with_off_above_ten():
+    loaded = load_map("diematic_isystem")
+    for circuit in ("a", "b", "c"):
+        register = loaded.get(f"circuit_{circuit}_anticipation")
+        assert register.unit == "°dH"
+        assert register.codec.decode([101]) == 10.1
+        assert (register.min, register.max, register.step) == (0, 10.1, 0.1)
