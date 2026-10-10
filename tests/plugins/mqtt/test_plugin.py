@@ -363,3 +363,19 @@ def test_unknown_configuration_keys_are_rejected():
     context = PluginContext(REGMAP, StateStore(REGMAP), EventBus(), "en", {"hots": "x"})
     with pytest.raises(PluginError, match="hots"):
         MqttPlugin(context)
+
+
+async def test_the_password_never_reaches_the_logs(caplog):
+    caplog.set_level("DEBUG")
+    rig = Rig(username="bridge", password="s3cret-password-value")
+    await rig.start()
+    try:
+        rig.client.deliver(f"{P}/circuit_a_day_temp/set", b"warm")
+        rig.client.deliver(f"{P}/climate/circuit_z/mode/set", b"auto")
+        rig.events.publish(SetResult("circuit_a_day_temp", False, "refused"))
+        await rig.settle()
+    finally:
+        await rig.stop()
+    assert "s3cret-password-value" not in caplog.text
+    assert "s3cret-password-value" not in repr(rig.plugin.settings)
+    assert all("s3cret-password-value" not in str(p) for p in rig.client.published)
