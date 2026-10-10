@@ -137,19 +137,19 @@ values they left behind, from Home Assistant.
 
 ## Verifying a map on your boiler
 
-The shipped iSystem map follows the GTW-26 gateway documentation. If your converter sits
-directly on the regulator's bus the addresses may differ, so compare before you trust writes.
-`probe` prints raw words next to the map's decoded values:
+The shipped iSystem map follows the GTW-26 gateway documentation. Confirmed on an iSystem boiler
+with the converter directly on the regulator's bus: the addresses answer the same way, a set bit
+in a weekly program means the day period, and the anticipation setting is in °dH. Other boilers
+may differ, so compare before you trust writes. `probe` prints raw words next to the map's
+decoded values:
 
 ```bash
 diematic probe --from 600 --to 700 --config config.yaml
 ```
 
-Things worth checking on the first run, because the manufacturer's list leaves them open:
+Still worth checking on the first run, because the manufacturer's list leaves them open:
 
 - the sign and range of a few temperatures against the regulator's display;
-- time programs: that a set bit really is the day period;
-- `anticipation` (read here in tenths of an hour, with 10.1 meaning off);
 - the stop-period months (read as 1-12);
 - the thermostat flags: that setting `day`, `night`, `auto` and `frost_protection` in the
   forcing register does what the regulator's display shows;

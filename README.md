@@ -64,9 +64,12 @@ diematic run
 
 ## Status and limits
 
-- The iSystem map follows the manufacturer's parameter list for the GTW-26 gateway. Whether
-  those addresses answer identically when the converter sits directly on the regulator's bus is
-  not verified here; use `diematic probe` first and compare ([register maps](docs/register-maps.md#verifying-a-map-on-your-boiler)).
+- The iSystem map follows the manufacturer's parameter list for the GTW-26 gateway. On an
+  iSystem boiler, with the converter directly on the regulator's bus, its addresses answer the same
+  way and weekly programs use a set bit for the day period. Not every boiler has every register:
+  list what yours lacks in `disabled_registers`
+  ([register maps](docs/register-maps.md#leaving-registers-out)) and compare the rest with
+  `diematic probe` ([verifying a map](docs/register-maps.md#verifying-a-map-on-your-boiler)).
 - The solar registers are exposed raw: the manual gives no units for them.
 - A domestic hot water `water_heater` entity is not provided yet; the DHW setpoints are
   available as number entities.

@@ -101,7 +101,7 @@ confirms every write by reading it back until the value matches, tolerating thos
 | `uint` | Unsigned 16 bit, optionally scaled. |
 | `enum` | Unsigned 16 bit mapped to a label. |
 | `bits` | Named flags in one register. |
-| `time_program` | One weekday in three registers: one bit per half hour, most significant bit of the first register first, a set bit meaning the day (comfort) period. The manufacturer's example `0x0003 0xFFFF 0xFF00` is day from 07:00 to 20:00. Published as text such as `07:00-20:00,22:00-23:30`. |
+| `time_program` | One weekday in three registers: one bit per half hour, most significant bit of the first register first, a set bit meaning the day (comfort) period, as confirmed on an iSystem boiler. The manufacturer's example `0x0003 0xFFFF 0xFF00` is day from 07:00 to 20:00. Published as text such as `07:00-20:00,22:00-23:30`. |
 
 Registers of larger counters are split (for example MWh / kWh / Wh); the map's `derived`
 sensors add them up.
