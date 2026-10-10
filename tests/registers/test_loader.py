@@ -285,3 +285,74 @@ def test_invalid_climate_definitions_are_rejected(override, message):
 def test_unknown_mode_name_is_rejected_by_the_schema():
     with pytest.raises(MapError):
         parse_map(climate_map(modes={"turbo": "auto"}))
+
+
+def grouped_map():
+    data = climate_map()
+    for register in data["registers"]:
+        register["group"] = "circuit_a"
+    data["registers"].append(
+        {
+            "key": "pool",
+            "address": 9,
+            "type": "temp",
+            "kind": "measure",
+            "name": "Pool",
+            "group": "pool",
+        }
+    )
+    data["derived"] = [
+        {"key": "pool_double", "name": "Twice", "terms": [{"key": "pool", "factor": 2}]},
+        {"key": "room_double", "name": "Twice", "terms": [{"key": "room", "factor": 2}]},
+    ]
+    return parse_map(data)
+
+
+def test_excluding_nothing_returns_the_same_map():
+    loaded = grouped_map()
+    assert loaded.excluding([]) is loaded
+
+
+def test_a_register_can_be_excluded_by_key():
+    reduced = grouped_map().excluding(["pool"])
+    assert "pool" not in reduced and "room" in reduced
+    assert [d.key for d in reduced.derived] == ["room_double"]
+
+
+def test_a_whole_group_can_be_excluded():
+    reduced = grouped_map().excluding(["circuit_a"])
+    assert [r.key for r in reduced.registers] == ["pool"]
+    assert reduced.composites == ()
+    assert [d.key for d in reduced.derived] == ["pool_double"]
+
+
+def test_derived_sensors_and_thermostats_follow_the_registers_they_use():
+    loaded = grouped_map()
+    assert grouped_map().excluding(["room"]).composites == ()
+    assert [d.key for d in loaded.excluding(["room"]).derived] == ["pool_double"]
+    assert loaded.excluding(["night"]).composites == ()
+
+
+def test_a_thermostat_or_derived_sensor_can_be_excluded_by_its_own_key():
+    loaded = grouped_map()
+    assert loaded.excluding(["circuit_a"]).composites == ()
+    assert [d.key for d in loaded.excluding(["pool_double"]).derived] == ["room_double"]
+
+
+def test_the_original_map_is_kept_for_reference():
+    loaded = grouped_map()
+    reduced = loaded.excluding(["pool"]).excluding(["room"])
+    assert reduced.unfiltered is loaded
+    assert len(loaded.registers) == len(reduced.registers) + 2
+
+
+def test_unknown_names_are_reported_with_the_known_groups():
+    with pytest.raises(MapError, match=r"nope.*groups: circuit_a, pool"):
+        grouped_map().excluding(["nope", "pool"])
+
+
+def test_lookups_work_on_the_reduced_map():
+    reduced = grouped_map().excluding(["pool"])
+    assert reduced.get("room").key == "room"
+    with pytest.raises(KeyError):
+        reduced.get("pool")

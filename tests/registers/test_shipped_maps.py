@@ -159,3 +159,20 @@ def test_shipped_maps_declare_a_thermostat_per_circuit(name, circuits):
     assert first.enabled_by_default
     assert all(not c.enabled_by_default for c in loaded.composites[1:])
     assert set(first.modes) == {"auto", "heat", "off"}
+
+
+def test_whole_features_can_be_switched_off_on_the_isystem_map():
+    full = load_map("diematic_isystem")
+    reduced = full.excluding(["solar", "circuit_c", "heat_pump"])
+    assert not any(r.group in {"solar", "circuit_c", "heat_pump"} for r in reduced.registers)
+    assert "circuit_a_day_temp" in reduced and "circuit_b_day_temp" in reduced
+    assert {c.key for c in reduced.composites} == {"circuit_a", "circuit_b"}
+    assert len(reduced.registers) < len(full.registers)
+    assert reduced.unfiltered is full
+
+
+def test_every_group_of_the_isystem_map_can_be_named_in_the_exclusion_list():
+    full = load_map("diematic_isystem")
+    groups = {r.group for r in full.registers if r.group}
+    assert {"circuit_a", "circuit_b", "circuit_c", "dhw", "aux", "solar", "cascade"} <= groups
+    assert not full.excluding(sorted(groups)).registers

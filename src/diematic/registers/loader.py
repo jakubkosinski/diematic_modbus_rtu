@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -42,6 +42,7 @@ class RegisterMap:
     registers: tuple[RegisterDef, ...]
     derived: tuple[DerivedDef, ...]
     composites: tuple[ClimateDef, ...]
+    unfiltered: RegisterMap | None = field(default=None, repr=False, compare=False)
     _by_key: dict[str, RegisterDef] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
@@ -52,6 +53,52 @@ class RegisterMap:
 
     def __contains__(self, key: object) -> bool:
         return key in self._by_key
+
+    def excluding(self, names: Iterable[str]) -> RegisterMap:
+        """A copy without the named registers.
+
+        A name is a register key, a derived sensor or thermostat key, or a group (such as
+        `solar`), which removes every register of that group. Derived sensors and thermostats
+        that depend on a removed register go with it. `unfiltered` keeps the original map.
+        """
+        wanted = list(names)
+        if not wanted:
+            return self
+        groups = {r.group for r in self.registers if r.group}
+        groups |= {d.group for d in self.derived if d.group}
+        known = {r.key for r in self.registers}
+        known |= {d.key for d in self.derived} | {c.key for c in self.composites} | groups
+        unknown = sorted(set(wanted) - known)
+        if unknown:
+            raise MapError(
+                f"cannot disable unknown register or group: {', '.join(unknown)} "
+                f"(groups: {', '.join(sorted(groups))})"
+            )
+        chosen = set(wanted)
+        registers = tuple(
+            r for r in self.registers if r.key not in chosen and r.group not in chosen
+        )
+        present = {r.key for r in registers}
+        derived = tuple(
+            d
+            for d in self.derived
+            if d.key not in chosen
+            and d.group not in chosen
+            and all(t.key in present for t in d.terms)
+        )
+        composites = tuple(
+            c
+            for c in self.composites
+            if c.key not in chosen
+            and {c.current_temperature, c.low, c.high, c.mode_register} <= present
+        )
+        return replace(
+            self,
+            registers=registers,
+            derived=derived,
+            composites=composites,
+            unfiltered=self.unfiltered or self,
+        )
 
 
 def _expand_time_programs(data: MapFile, language: str) -> list[RegisterDef]:
