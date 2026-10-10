@@ -295,3 +295,22 @@ async def test_skipped_registers_are_tried_again_after_an_hour():
     await poller.poll_group("fast")
     assert poller.skipped == []
     assert values(drain(events)).get("b") == 22
+
+
+async def test_skipped_registers_are_summed_up_with_a_ready_to_paste_setting(caplog):
+    caplog.set_level("INFO")
+    poller, bus, _ = build()
+    bus.silent = {2, 5}
+    await poller.poll_group("slow")
+    for _ in range(3):
+        await poller.poll_group("fast")
+    summaries = [r.message for r in caplog.records if "does not answer 2 registers" in r.message]
+    assert len(summaries) == 1
+    assert "DIEMATIC_DISABLED_REGISTERS=b,c" in summaries[0]
+
+
+async def test_nothing_is_summarised_while_nothing_is_skipped(caplog):
+    caplog.set_level("INFO")
+    poller, _, _ = build()
+    await poller.poll_group("fast")
+    assert not [r for r in caplog.records if "does not answer" in r.message]

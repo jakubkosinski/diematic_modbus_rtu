@@ -71,6 +71,7 @@ class Poller:
         self._unsupported: dict[str, float] = {}
         self._misses: dict[str, int] = {}
         self._unproven: list[Block] = []
+        self._reported: tuple[str, ...] = ()
         self._since = clock()
         self._last_ok: float | None = None
         self.online: bool | None = None
@@ -101,7 +102,23 @@ class Poller:
             pending, self._unproven = self._unproven, []
             retry = deque(part for block in pending for part in self._isolate(block))
             healthy = await self._drain(retry) and healthy
+        self._report_skipped()
         return healthy
+
+    def _report_skipped(self) -> None:
+        skipped = tuple(self.skipped)
+        if skipped == self._reported:
+            return
+        self._reported = skipped
+        if skipped:
+            names = ",".join(skipped)
+            logger.info(
+                "the boiler does not answer %d registers: %s. To stop polling them for good and "
+                "drop their entities set DIEMATIC_DISABLED_REGISTERS=%s",
+                len(skipped),
+                ", ".join(skipped),
+                names,
+            )
 
     async def _drain(self, queue: deque[Block]) -> bool:
         healthy = True
