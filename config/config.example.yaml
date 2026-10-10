@@ -1,0 +1,33 @@
+# Example configuration. Point DIEMATIC_CONFIG (or `diematic run --config`) at a copy of this file.
+# Environment variables override anything set here; see docs/configuration.md.
+
+gateway:
+  host: 192.168.1.50          # RS485-to-Ethernet converter wired to the boiler
+  port: 20108
+  map: diematic_isystem       # diematic_isystem, diematic3_legacy or a path to your own YAML
+  language: pl                # pl or en
+  # slave_address: 10         # defaults to the address from the map
+  read_only: false
+  trailing_zero: true
+  fast_interval: 30           # seconds between polls of measurements
+  slow_interval: 300          # seconds between polls of settings and programs
+  clock_sync: false
+  timezone: Europe/Warsaw     # used by clock_sync
+  log_level: INFO
+  # Override the bus timing only if your boiler's rhythm differs from 5 s talking / 5 s listening.
+  # bus:
+  #   master_phase: 5.0
+  #   cycle: 10.0
+  #   window: 4.0
+
+# Plugins listed here are enabled. Without this section the MQTT plugin runs with its defaults.
+plugins:
+  mqtt:
+    host: mosquitto
+    port: 1883
+    username: diematic
+    # Prefer the MQTT_PASSWORD environment variable over writing the password in this file.
+    topic_prefix: diematic
+    discovery: true
+    discovery_prefix: homeassistant
+    qos: 1

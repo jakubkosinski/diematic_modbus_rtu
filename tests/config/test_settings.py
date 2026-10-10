@@ -162,3 +162,16 @@ def test_masked_dump_is_json_friendly(tmp_path):
 def test_gateway_settings_can_be_built_directly(monkeypatch):
     monkeypatch.setenv("DIEMATIC_HOST", "h")
     assert GatewaySettings(port=5).port == 5
+
+
+def test_the_shipped_example_configuration_is_valid():
+    from pathlib import Path
+
+    from diematic.plugins.mqtt.settings import MqttSettings
+
+    example = Path(__file__).resolve().parents[2] / "config" / "config.example.yaml"
+    settings = load_settings(example)
+    assert settings.gateway.host == "192.168.1.50"
+    assert settings.enabled_plugins == ["mqtt"]
+    mqtt = MqttSettings(**settings.plugin_config["mqtt"])
+    assert (mqtt.host, mqtt.qos, mqtt.discovery) == ("mosquitto", 1, True)
