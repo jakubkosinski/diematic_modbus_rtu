@@ -314,3 +314,35 @@ async def test_nothing_is_summarised_while_nothing_is_skipped(caplog):
     poller, _, _ = build()
     await poller.poll_group("fast")
     assert not [r for r in caplog.records if "does not answer" in r.message]
+
+
+async def test_a_mute_register_in_the_first_block_is_sorted_out_within_the_first_round():
+    regmap = parse_map(
+        {
+            "system": "t",
+            "name": "t",
+            "registers": [
+                measure("a", 1),
+                measure("b", 2),
+                measure("s", 10, poll="slow"),
+            ],
+        }
+    )
+    bus = FakeBus({1: 11, 2: 22, 10: 100})
+    bus.silent = {2}
+    events = EventBus()
+    subscription = events.subscribe()
+    poller = Poller(
+        bus,
+        regmap,
+        StateStore(regmap),
+        events,
+        PollIntervals(fast=30, slow=30, retry=30),
+    )
+    task = asyncio.create_task(poller.run())
+    await asyncio.sleep(0.3)
+    task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await task
+    assert values(drain(subscription)) == {"a": 11, "s": 100}
+    assert poller.online is True

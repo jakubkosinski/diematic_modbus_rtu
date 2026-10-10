@@ -27,6 +27,7 @@ from diematic.registers.planner import Block, plan_blocks
 logger = logging.getLogger(__name__)
 
 _GROUPS = ("fast", "slow")
+DEFAULT_RETRY = 10.0
 _UNSUPPORTED_RETRY = 3600.0
 # The gateway answers these when it has lost the boiler, so they count as a failed link.
 _LINK_LOST_CODES = frozenset({EXC_PATH_UNAVAILABLE, EXC_TARGET_NO_RESPONSE})
@@ -42,7 +43,7 @@ class RegisterBus(Protocol):
 class PollIntervals:
     fast: float = 30.0
     slow: float = 300.0
-    retry: float = 10.0
+    retry: float = DEFAULT_RETRY
 
 
 class Poller:
@@ -90,18 +91,28 @@ class Poller:
                     healthy = await self.poll_group(group)
                     interval = getattr(self._intervals, group)
                     due[group] = time.monotonic() + (interval if healthy else self._intervals.retry)
+            # A block that got no answer before any read had succeeded can only be judged now.
+            await self._settle_unproven()
             await asyncio.sleep(max(min(due.values()) - time.monotonic(), 0.1))
 
     async def poll_group(self, group: str) -> bool:
         """Read every block of a poll group once. Returns False if the link misbehaved."""
-        self._unproven = []
+        self._unproven = [b for b in self._unproven if b.registers[0].poll_group != group]
         healthy = await self._drain(deque(self._plan(group)))
-        if self._unproven and self._alive():
-            # These blocks got no answer before anything had proven the link works; now that
-            # other reads have succeeded, find out which of their registers are mute.
-            pending, self._unproven = self._unproven, []
-            retry = deque(part for block in pending for part in self._isolate(block))
-            healthy = await self._drain(retry) and healthy
+        healthy = await self._settle_unproven() and healthy
+        self._report_skipped()
+        return healthy
+
+    async def _settle_unproven(self) -> bool:
+        """Re-examine blocks that failed before the link was proven, once other reads worked.
+
+        Their registers are read one by one to find out which of them is mute.
+        """
+        if not (self._unproven and self._alive()):
+            return True
+        pending, self._unproven = self._unproven, []
+        retry = deque(part for block in pending for part in self._isolate(block))
+        healthy = await self._drain(retry)
         self._report_skipped()
         return healthy
 
