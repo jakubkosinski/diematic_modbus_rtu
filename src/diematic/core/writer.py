@@ -91,6 +91,8 @@ class Writer:
                 return
         else:
             words = register.codec.encode(self._normalise(register, request.value))
+            if register.mask is not None:
+                words = await self._keep_ignored_bits(register, words)
         await self._write(register, words)
         await self._confirm(register, words)
 
@@ -137,6 +139,12 @@ class Writer:
             self._ingest(register, current)
             return None
         return [updated]
+
+    async def _keep_ignored_bits(self, register: RegisterDef, words: list[int]) -> list[int]:
+        """A masked register carries other information in the bits we ignore: leave them as is."""
+        assert register.mask is not None
+        current = await self._read(register)
+        return [(current[0] & ~register.mask & 0xFFFF) | words[0]]
 
     async def _read(self, register: RegisterDef) -> list[int]:
         return await self._bus.read_registers(

@@ -12,6 +12,7 @@ from diematic.modbus.rtu import ModbusException
 from diematic.registers.loader import parse_map
 
 SETPOINT, MODE, FORCING, SENSOR, PROGRAM = 10, 11, 12, 20, 30
+ACTIVE = 60
 
 REGMAP = parse_map(
     {
@@ -49,6 +50,15 @@ REGMAP = parse_map(
                 },
             },
             {"key": "sensor", "address": SENSOR, "type": "temp", "kind": "measure", "name": "S"},
+            {
+                "key": "active",
+                "address": ACTIVE,
+                "type": "enum",
+                "kind": "parameter",
+                "name": "Active program",
+                "mask": 3,
+                "values": {0: "P1", 1: "P2", 2: "P3", 3: "P4"},
+            },
         ],
         "time_programs": [{"key": "prog", "name": "Program", "address": PROGRAM}],
     }
@@ -283,3 +293,33 @@ async def test_run_survives_a_failing_request():
     with contextlib.suppress(asyncio.CancelledError):
         await task
     assert [o.ok for o in outcomes] == [False, True]
+
+
+async def test_bits_outside_the_mask_survive_a_write(rig):
+    writer, bus, state, _ = rig
+    bus.registers[ACTIVE] = 8192
+    assert (await writer.apply(SetRequest("active", "P2"))).ok
+    assert bus.writes == [(ACTIVE, [8193])]
+    assert bus.registers[ACTIVE] == 8193
+    assert state.value("active") == "P2" and state.raw("active") == (8193,)
+
+
+async def test_a_masked_register_without_extra_bits_is_written_plainly(rig):
+    writer, bus, _, _ = rig
+    bus.registers[ACTIVE] = 0
+    assert (await writer.apply(SetRequest("active", "P3"))).ok
+    assert bus.writes == [(ACTIVE, [2])]
+
+
+async def test_registers_without_a_mask_are_written_without_an_extra_read(rig):
+    writer, bus, _, _ = rig
+    reads = []
+    original = bus.read_registers
+
+    async def counting(start, count, *, max_wait=0):
+        reads.append(start)
+        return await original(start, count, max_wait=max_wait)
+
+    bus.read_registers = counting
+    assert (await writer.apply(SetRequest("setpoint", 20))).ok
+    assert reads == [SETPOINT]
