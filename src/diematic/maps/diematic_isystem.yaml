@@ -567,9 +567,9 @@ registers:
       3: {pl: Włoski, en: Italian}
       4: {pl: Hiszpański, en: Spanish}
       5: {pl: Niderlandzki, en: Dutch}
-      6: {pl: Polski, en: Polish}
-      7: {pl: Turecki, en: Turkish}
-      8: {pl: Rosyjski, en: Russian}
+      6: {pl: Rosyjski, en: Russian}
+      7: {pl: Polski, en: Polish}
+      8: {pl: Turecki, en: Turkish}
   - {key: clock_hour, address: 679, type: uint, kind: parameter, name: {pl: Godzina, en: Clock hour}, unit: h, min: 0, max: 23, step: 1, group: system}
   - {key: clock_minute, address: 680, type: uint, kind: parameter, name: {pl: Minuta, en: Clock minute}, unit: min, min: 0, max: 59, step: 1, group: system}
   - key: clock_weekday

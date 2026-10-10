@@ -201,3 +201,11 @@ def test_anticipation_is_in_degree_hours_with_off_above_ten():
 def test_the_active_program_ignores_the_high_flag_bit(circuit, raw, expected):
     register = load_map("diematic_isystem").get(f"circuit_{circuit}_active_program")
     assert register.codec.decode([raw]) == expected
+
+
+@pytest.mark.parametrize(
+    ("raw", "english"),
+    [(0, "French"), (1, "German"), (2, "English"), (6, "Russian"), (7, "Polish"), (8, "Turkish")],
+)
+def test_regulator_language_numbers_match_a_real_boiler(raw, english):
+    assert load_map("diematic_isystem").get("language").codec.decode([raw]) == english
