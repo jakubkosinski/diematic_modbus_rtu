@@ -1,0 +1,78 @@
+system: diematic3_legacy
+name: De Dietrich Diematic 3 (legacy register layout)
+slave_address: 10
+max_block: 64
+max_gap: 8
+
+templates:
+  temp_measure: &temp_measure {type: temp, kind: measure, unit: "°C", device_class: temperature, state_class: measurement}
+  room_setpoint: &room_setpoint {type: temp, kind: parameter, unit: "°C", device_class: temperature, min: 5, max: 30, step: 0.5, poll: fast}
+  dhw_setpoint: &dhw_setpoint {type: temp, kind: parameter, unit: "°C", device_class: temperature, min: 10, max: 80, step: 5, poll: fast}
+  curve_slope: &curve_slope {type: uint, kind: measure, scale: 0.1}
+  mode_bits: &mode_bits
+    frost_protection: {bit: 0, name: {pl: Ochrona przeciwzamrożeniowa, en: Frost protection}, writable: true}
+    night: {bit: 1, name: {pl: Noc, en: Night}, writable: true}
+    day: {bit: 2, name: {pl: Dzień, en: Day}, writable: true}
+    auto: {bit: 3, name: {pl: Auto, en: Auto}, writable: true}
+    dhw_constant: {bit: 4, name: {pl: CWU stała, en: DHW constant}, writable: true}
+    circuit_temperature_controlled: {bit: 5, name: {pl: Obieg wg temperatury, en: Circuit temperature controlled}, writable: true}
+    dhw_temperature_controlled: {bit: 6, name: {pl: CWU wg temperatury, en: DHW temperature controlled}, writable: true}
+  clock: &clock {type: uint, kind: parameter, group: system}
+
+registers:
+  - {key: software_release, address: 3, type: uint, kind: measure, name: {pl: Wersja oprogramowania regulatora, en: Controller software version}, group: service}
+  - {<<: *clock, key: clock_hour, address: 4, name: {pl: Godzina, en: Clock hour}, unit: h, min: 0, max: 23, step: 1}
+  - {<<: *clock, key: clock_minute, address: 5, name: {pl: Minuta, en: Clock minute}, unit: min, min: 0, max: 59, step: 1}
+  - {<<: *clock, key: clock_weekday, address: 6, name: {pl: Dzień tygodnia (1 = poniedziałek), en: Clock weekday (1 = Monday)}, min: 1, max: 7, step: 1}
+  - {<<: *temp_measure, key: outdoor_temp, address: 7, name: {pl: Temperatura zewnętrzna, en: Outdoor temperature}, group: boiler}
+  - {key: frost_days_remaining, address: 13, type: uint, kind: measure, name: {pl: Pozostałe dni ochrony przeciwzamrożeniowej, en: Remaining frost protection days}, group: boiler}
+
+  - {<<: *room_setpoint, key: circuit_a_day_temp, address: 14, name: {pl: Temperatura dzień obiegu A, en: Circuit A day temperature}, group: circuit_a}
+  - {<<: *room_setpoint, key: circuit_a_night_temp, address: 15, name: {pl: Temperatura noc obiegu A, en: Circuit A night temperature}, group: circuit_a}
+  - {<<: *room_setpoint, key: circuit_a_frost_temp, address: 16, name: {pl: Temperatura przeciwzamrożeniowa obiegu A, en: Circuit A frost protection temperature}, group: circuit_a}
+  - {key: circuit_a_mode, address: 17, type: bits, kind: parameter, name: {pl: Tryb pracy obiegu A i CWU, en: Circuit A and DHW mode}, bits: *mode_bits, poll: fast, group: circuit_a}
+  - {<<: *temp_measure, key: circuit_a_room_temp, address: 18, name: {pl: Temperatura pokojowa obiegu A, en: Circuit A room temperature}, group: circuit_a}
+  - {<<: *curve_slope, key: circuit_a_curve_slope, address: 20, name: {pl: Krzywa grzewcza obiegu A, en: Circuit A heating curve slope}, group: circuit_a}
+  - {<<: *temp_measure, key: circuit_a_calculated_flow_temp, address: 21, name: {pl: Obliczona temp. zasilania obiegu A, en: Circuit A calculated flow temperature}, group: circuit_a}
+
+  - {<<: *room_setpoint, key: circuit_b_day_temp, address: 23, name: {pl: Temperatura dzień obiegu B, en: Circuit B day temperature}, group: circuit_b}
+  - {<<: *room_setpoint, key: circuit_b_night_temp, address: 24, name: {pl: Temperatura noc obiegu B, en: Circuit B night temperature}, group: circuit_b}
+  - {<<: *room_setpoint, key: circuit_b_frost_temp, address: 25, name: {pl: Temperatura przeciwzamrożeniowa obiegu B, en: Circuit B frost protection temperature}, group: circuit_b}
+  - {key: circuit_b_mode, address: 26, type: bits, kind: parameter, name: {pl: Tryb pracy obiegu B, en: Circuit B mode}, bits: *mode_bits, poll: fast, group: circuit_b}
+  - {<<: *temp_measure, key: circuit_b_room_temp, address: 27, name: {pl: Temperatura pokojowa obiegu B, en: Circuit B room temperature}, group: circuit_b}
+  - {<<: *curve_slope, key: circuit_b_curve_slope, address: 29, name: {pl: Krzywa grzewcza obiegu B, en: Circuit B heating curve slope}, group: circuit_b}
+  - {<<: *temp_measure, key: circuit_b_calculated_flow_temp, address: 32, name: {pl: Obliczona temp. zasilania obiegu B, en: Circuit B calculated flow temperature}, group: circuit_b}
+
+  - {<<: *dhw_setpoint, key: dhw_day_temp, address: 59, name: {pl: Zadana temp. CWU w dzień, en: DHW day temperature}, group: dhw}
+  - {<<: *temp_measure, key: dhw_temp, address: 62, name: {pl: Temperatura CWU, en: DHW temperature}, group: dhw}
+  - {<<: *dhw_setpoint, key: dhw_night_temp, address: 96, name: {pl: Zadana temp. CWU w nocy, en: DHW night temperature}, group: dhw}
+
+  - {<<: *temp_measure, key: boiler_flow_temp, address: 75, name: {pl: Temperatura kotła, en: Boiler temperature}, group: boiler}
+  - {key: clock_day, address: 108, type: uint, kind: parameter, name: {pl: Dzień miesiąca, en: Clock day of month}, min: 1, max: 31, step: 1, group: system}
+  - {key: clock_month, address: 109, type: uint, kind: parameter, name: {pl: Miesiąc, en: Clock month}, min: 1, max: 12, step: 1, group: system}
+  - {key: clock_year, address: 110, type: uint, kind: parameter, name: {pl: Rok (dwie cyfry), en: Clock year (two digits)}, min: 14, max: 99, step: 1, group: system}
+
+  - {key: boiler_states, address: 427, type: bits, kind: measure, name: {pl: Stany kotła, en: Boiler states}, bits: {burner_on: {bit: 3, name: {pl: Palnik włączony, en: Burner on}}, circuit_a_pump: {bit: 4, name: {pl: Pompa obiegu A, en: Circuit A pump}}, dhw_pump: {bit: 5, name: {pl: Pompa CWU, en: DHW pump}}}, group: boiler}
+  - {key: circuit_options, address: 428, type: bits, kind: measure, name: {pl: Opcje obiegów B i C, en: Circuit B and C options}, bits: {circuit_b_pump: {bit: 4, name: {pl: Pompa obiegu B, en: Circuit B pump}}}, group: boiler}
+  - {<<: *temp_measure, key: ionization_current, address: 451, name: {pl: Prąd jonizacji, en: Ionization current}, unit: "µA", device_class: null, group: boiler}
+  - {<<: *temp_measure, key: boiler_return_temp, address: 453, name: {pl: Temperatura powrotu, en: Return temperature}, group: boiler}
+  - {<<: *temp_measure, key: smoke_temp, address: 454, name: {pl: Temperatura spalin, en: Flue gas temperature}, group: boiler}
+  - {key: fan_speed, address: 455, type: uint, kind: measure, name: {pl: Prędkość wentylatora, en: Fan speed}, unit: rpm, state_class: measurement, group: boiler}
+  - {<<: *temp_measure, key: water_pressure, address: 456, name: {pl: Ciśnienie wody w instalacji, en: Water pressure}, unit: bar, device_class: pressure, group: boiler}
+  - {key: boiler_type, address: 457, type: uint, kind: measure, name: {pl: Typ kotła, en: Boiler type}, group: boiler}
+  - {key: pump_power, address: 463, type: uint, kind: measure, name: {pl: Moc pompy, en: Pump power}, unit: "%", state_class: measurement, group: boiler}
+  - key: boiler_error
+    address: 465
+    type: enum
+    kind: measure
+    name: {pl: Błąd kotła, en: Boiler error}
+    group: service
+    values:
+      0: {pl: OK, en: OK}
+      10: {pl: Awaria czujnika powrotu, en: Return sensor failure}
+      21: {pl: Niskie ciśnienie wody, en: Low water pressure}
+      26: {pl: Błąd zapłonu, en: Ignition failure}
+      27: {pl: Płomień pasożytniczy, en: Parasitic flame}
+      28: {pl: Zadziałanie STB kotła, en: Boiler STB tripped}
+      30: {pl: Reset sterownika palnika, en: Burner controller reset}
+      31: {pl: Awaria czujnika spalin, en: Flue gas sensor failure}

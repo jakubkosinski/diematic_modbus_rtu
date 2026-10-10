@@ -2,7 +2,7 @@ import pytest
 
 from diematic.registers.loader import load_map
 
-SHIPPED_MAPS = ["diematic_isystem"]
+SHIPPED_MAPS = ["diematic_isystem", "diematic3_legacy"]
 
 
 @pytest.mark.parametrize("language", ["en", "pl"])
@@ -120,3 +120,26 @@ def test_isystem_error_codes_cover_every_boiler_family(raw, expected):
 
 def test_isystem_unknown_error_code_decodes_to_none():
     assert load_map("diematic_isystem").get("boiler_error").codec.decode([0x0F00]) is None
+
+
+def test_legacy_mode_bits_reproduce_documented_mode_values():
+    codec = load_map("diematic3_legacy").get("circuit_a_mode").codec
+    auto = codec.decode([8])
+    assert auto["auto"] and not auto["day"]
+    day_by_temperature = codec.decode([36])
+    assert day_by_temperature["day"] and day_by_temperature["circuit_temperature_controlled"]
+    dhw_by_temperature = codec.decode([0x50])
+    assert dhw_by_temperature["dhw_constant"] and dhw_by_temperature["dhw_temperature_controlled"]
+
+
+def test_legacy_mode_change_keeps_dhw_bits():
+    codec = load_map("diematic3_legacy").get("circuit_a_mode").codec
+    current = 0x50 | 0x08
+    changed = codec.apply(current, {"auto": False, "night": True})
+    assert changed == 0x50 | 0x02
+
+
+def test_legacy_reads_in_large_blocks():
+    loaded = load_map("diematic3_legacy")
+    assert (loaded.max_block, loaded.max_gap) == (64, 8)
+    assert load_map("diematic_isystem").max_block == 40
