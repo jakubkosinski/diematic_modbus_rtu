@@ -12,12 +12,12 @@ GROUP = "diematic.plugins"
 EntryPoints = Callable[[], Iterable[EntryPoint]]
 
 
-def _installed() -> Iterable[EntryPoint]:
+def installed_plugins() -> Iterable[EntryPoint]:
     return entry_points(group=GROUP)
 
 
 def load_plugin_classes(
-    names: Iterable[str], discover: EntryPoints = _installed
+    names: Iterable[str], discover: EntryPoints = installed_plugins
 ) -> dict[str, type[Plugin]]:
     available = {entry.name: entry for entry in discover()}
     classes: dict[str, type[Plugin]] = {}
@@ -39,7 +39,7 @@ def load_plugin_classes(
 def create_plugins(
     names: Iterable[str],
     context_for: Callable[[str], PluginContext],
-    discover: EntryPoints = _installed,
+    discover: EntryPoints = installed_plugins,
 ) -> dict[str, Plugin]:
     """Instantiate the named plugins, each with its own context."""
     classes = load_plugin_classes(list(names), discover)
