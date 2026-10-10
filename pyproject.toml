@@ -36,9 +36,6 @@ mqtt = "diematic.plugins.mqtt.plugin:MqttPlugin"
 [tool.hatch.build.targets.wheel]
 packages = ["src/diematic"]
 
-[tool.hatch.build.targets.wheel.force-include]
-"maps" = "diematic/maps"
-
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
