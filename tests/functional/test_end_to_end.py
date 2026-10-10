@@ -62,6 +62,36 @@ registers:
     type: uint
     kind: measure
     name: Register this boiler does not have
+  - key: clock_year
+    address: 100
+    type: uint
+    kind: parameter
+    name: Clock year
+    poll: fast
+  - key: clock_month
+    address: 101
+    type: uint
+    kind: parameter
+    name: Clock month
+    poll: fast
+  - key: clock_day
+    address: 102
+    type: uint
+    kind: parameter
+    name: Clock day
+    poll: fast
+  - key: clock_hour
+    address: 103
+    type: uint
+    kind: parameter
+    name: Clock hour
+    poll: fast
+  - key: clock_minute
+    address: 104
+    type: uint
+    kind: parameter
+    name: Clock minute
+    poll: fast
 time_programs:
   - {key: program, name: Program, address: 30}
 composites:
@@ -74,6 +104,14 @@ composites:
     modes: {auto: auto, heat: day, "off": frost}
     presets: {night: night, day: day}
     exclusive: [frost, night, day, auto]
+timestamps:
+  - key: boiler_time
+    name: Boiler time
+    year: clock_year
+    month: clock_month
+    day: clock_day
+    hour: clock_hour
+    minute: clock_minute
 """
 
 FAST_BUS = BusSettings(
@@ -166,6 +204,7 @@ async def stack(tmp_path):
     await broker.start()
     registers = default_registers(regmap)
     registers[20] = 205
+    registers.update({100: 26, 101: 7, 102: 15, 103: 10, 104: 30})
     simulator = BoilerSimulator(
         registers=registers, master_phase=0.3, silent_phase=0.6, master_frame_interval=0.05
     )
@@ -178,6 +217,7 @@ async def stack(tmp_path):
             bus=FAST_BUS,
             fast_interval=1,
             language="en",
+            timezone="Europe/Warsaw",
         ),
         ["mqtt"],
         {"mqtt": {"host": "127.0.0.1", "port": broker.port, "client_id": "bridge"}},
@@ -289,3 +329,15 @@ async def test_registers_the_boiler_ignores_neither_flap_it_nor_break_the_others
     skipped = [r.message for r in caplog.records if "does not answer 1 registers" in r.message]
     assert skipped and "DIEMATIC_DISABLED_REGISTERS=ghost" in skipped[0]
     assert stack.simulator.collisions == 0
+
+
+async def test_the_boiler_time_is_composed_in_the_configured_zone_and_follows_the_clock(stack):
+    home = stack.home
+    assert await home.wait("diematic/boiler_time", "2026-07-15T10:30:00+02:00")
+    sensor = json.loads(await home.wait("homeassistant/sensor/diematic/boiler_time/config"))
+    assert sensor["device_class"] == "timestamp"
+    assert sensor["state_topic"] == "diematic/boiler_time"
+    stack.simulator.registers[104] = 31
+    assert await home.wait("diematic/boiler_time", "2026-07-15T10:31:00+02:00")
+    stack.simulator.registers.update({101: 12, 102: 1})
+    assert await home.wait("diematic/boiler_time", "2026-12-01T10:31:00+01:00")
