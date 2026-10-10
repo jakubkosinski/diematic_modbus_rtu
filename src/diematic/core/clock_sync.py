@@ -9,6 +9,7 @@ from datetime import datetime, tzinfo
 
 from diematic.core.poller import RegisterBus
 from diematic.core.state import StateStore
+from diematic.core.timestamp import compose_timestamp
 from diematic.modbus.rtu import ModbusError
 from diematic.registers.loader import RegisterMap
 
@@ -59,10 +60,7 @@ class ClockSync:
         if any(w is None for w in words):
             return None
         hour, minute, _, day, month, year = (w[0] for w in words if w is not None)
-        try:
-            return datetime(2000 + year, month, day, hour, minute, tzinfo=self._tz)
-        except ValueError:
-            return None
+        return compose_timestamp(year, month, day, hour, minute, self._tz)
 
     def drift(self) -> float | None:
         """Seconds the boiler clock is ahead of the host clock (None while unknown)."""
