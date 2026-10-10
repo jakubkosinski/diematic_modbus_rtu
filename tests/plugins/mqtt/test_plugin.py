@@ -409,3 +409,27 @@ async def test_a_silent_boiler_does_not_make_the_entities_unavailable(rig):
     assert rig.client.last(f"{P}/circuit_a_day_temp") == "21.5"
     assert rig.client.last(f"{P}/status") == "online"
     assert not [t for t, payload, _ in rig.client.published if payload is None]
+
+
+async def test_the_boiler_time_is_published_like_any_other_value(rig):
+    rig.events.publish(ValueChanged("boiler_time", "2026-07-15T10:30:00+02:00", ()))
+    await rig.until(lambda: rig.client.last(f"{P}/boiler_time") is not None)
+    assert rig.client.last(f"{P}/boiler_time") == "2026-07-15T10:30:00+02:00"
+    assert rig.client.last("homeassistant/sensor/diematic/boiler_time/config")
+
+
+async def test_the_boiler_time_known_at_connect_time_is_published_with_the_snapshot():
+    rig = Rig()
+    for key, word in [
+        ("clock_year", 26),
+        ("clock_month", 7),
+        ("clock_day", 15),
+        ("clock_hour", 10),
+        ("clock_minute", 30),
+    ]:
+        rig.state.ingest(REGMAP.get(key), [word])
+    await rig.start()
+    try:
+        assert rig.client.last(f"{P}/boiler_time") == "2026-07-15T10:30:00+00:00"
+    finally:
+        await rig.stop()

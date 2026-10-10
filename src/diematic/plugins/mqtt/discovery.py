@@ -8,7 +8,7 @@ from typing import Any
 from diematic.plugins.mqtt.settings import MqttSettings
 from diematic.plugins.mqtt.topics import OFFLINE, ONLINE, Topics
 from diematic.registers.loader import RegisterMap
-from diematic.registers.model import ClimateDef, DerivedDef, RegisterDef
+from diematic.registers.model import ClimateDef, DerivedDef, RegisterDef, TimestampDef
 
 ON = "ON"
 OFF = "OFF"
@@ -63,6 +63,8 @@ class DiscoveryBuilder:
             messages.extend(self._register(register))
         for derived in self._regmap.derived:
             messages.append(self._derived(derived))
+        for stamp in self._regmap.timestamps:
+            messages.append(self._timestamp(stamp))
         for climate in self._regmap.composites:
             messages.append(self._climate(climate))
         messages.append(self._connection())
@@ -102,6 +104,7 @@ class DiscoveryBuilder:
             if message.topic not in kept
         ]
         present = {r.key for r in self._regmap.registers} | {d.key for d in self._regmap.derived}
+        present |= {t.key for t in self._regmap.timestamps}
         for register in original.registers:
             if register.key in present:
                 continue
@@ -110,6 +113,7 @@ class DiscoveryBuilder:
             else:
                 stale.append(topics.state(register.key))
         stale += [topics.state(d.key) for d in original.derived if d.key not in present]
+        stale += [topics.state(t.key) for t in original.timestamps if t.key not in present]
         thermostats = {c.key for c in self._regmap.composites}
         for climate in original.composites:
             if climate.key not in thermostats:
@@ -148,7 +152,7 @@ class DiscoveryBuilder:
         return DiscoveryMessage(topic, payload)
 
     @staticmethod
-    def _category(register: RegisterDef | DerivedDef) -> str | None:
+    def _category(register: RegisterDef | DerivedDef | TimestampDef) -> str | None:
         kind = getattr(register, "kind", "measure")
         group = register.group
         if kind == "measure" and group in _DIAGNOSTIC_GROUPS:
@@ -288,6 +292,21 @@ class DiscoveryBuilder:
             fields,
             enabled=derived.enabled_by_default,
             category=self._category(derived),
+        )
+
+    def _timestamp(self, stamp: TimestampDef) -> DiscoveryMessage:
+        fields = {
+            "state_topic": self._topics.state(stamp.key),
+            "device_class": "timestamp",
+            "value_template": _NUMERIC_TEMPLATE,
+        }
+        return self._message(
+            "sensor",
+            stamp.key,
+            stamp.name,
+            fields,
+            enabled=stamp.enabled_by_default,
+            category=self._category(stamp),
         )
 
     def _climate(self, climate: ClimateDef) -> DiscoveryMessage:

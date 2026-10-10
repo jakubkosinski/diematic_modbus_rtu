@@ -246,3 +246,32 @@ def test_derived_sensors_that_lost_their_registers_are_retired():
     removals = set(reduced_builder(["service"]).removals())
     assert "homeassistant/sensor/diematic/heating_electrical_energy/config" in removals
     assert "diematic/burner_hours" in removals
+
+
+def test_the_boiler_time_is_a_timestamp_sensor():
+    _, messages = build()
+    sensor = entity(messages, "sensor", "boiler_time")
+    assert sensor["device_class"] == "timestamp"
+    assert sensor["state_topic"] == "diematic/boiler_time"
+    assert sensor["name"] == "Boiler time"
+    assert "unit_of_measurement" not in sensor and "state_class" not in sensor
+    assert "enabled_by_default" not in sensor
+    assert [a["topic"] for a in sensor["availability"]] == ["diematic/status"]
+
+
+def test_the_boiler_time_is_named_in_the_map_language():
+    _, polish = build(language="pl")
+    assert entity(polish, "sensor", "boiler_time")["name"] == "Czas kotła"
+
+
+def test_the_boiler_time_is_exposed_by_the_legacy_map_too():
+    _, messages = build("diematic3_legacy")
+    assert entity(messages, "sensor", "boiler_time")["device_class"] == "timestamp"
+
+
+def test_the_boiler_time_is_retired_when_the_system_group_is_left_out():
+    builder = reduced_builder(["system"])
+    removals = set(builder.removals())
+    assert "homeassistant/sensor/diematic/boiler_time/config" in removals
+    assert "diematic/boiler_time" in removals
+    assert "homeassistant/sensor/diematic/boiler_time/config" not in by_topic(builder.build())
