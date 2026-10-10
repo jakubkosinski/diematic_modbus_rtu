@@ -43,6 +43,42 @@ templates:
     11: {pl: Listopad, en: November}
     12: {pl: Grudzień, en: December}
 
+  stop_day: &stop_day {type: uint, kind: parameter, min: 1, max: 31, step: 1, group: stop_periods, enabled_by_default: false}
+  stop_month: &stop_month {type: enum, kind: parameter, values: *months, group: stop_periods, enabled_by_default: false}
+  energy_part: &energy_part {type: uint, kind: measure, state_class: total_increasing, group: service, enabled_by_default: false}
+  solar_raw: &solar_raw {type: uint, group: solar, enabled_by_default: false}
+  boiler_types: &boiler_types
+    0: 3-25LP
+    1: 3-15LP
+    2: 3-25SOLO
+    3: 3-25K
+    4: 3-15SOLO
+    5: 3-E25LP
+    6: DOMOLIGHT
+    7: "3-35"
+    8: "3-50"
+    9: 3-25 BIC
+    10: 3-15ECO
+    11: 3-25ECO
+    12: 3-35ECO
+    13: 3-50ECO
+    14: 3-65ECO
+    20: Diematic 3
+    21: Diematic m2
+    22: Diematic m3
+    23: MIT
+    24: D4
+    25: {pl: Interfejs MB/OT, en: MB/OT interface}
+    30: MC 35 E
+    31: MC 45
+    32: MC 65
+    33: MC 90
+    34: C210
+    35: C310
+    36: C610
+    37: C230
+    40: Robur HP
+
 registers:
   # Circuit A
   - {<<: *temp_setting, key: circuit_a_max_flow_temp, address: 299, name: {pl: Maks. temperatura obiegu A, en: Circuit A maximum flow temperature}, min: 30, max: 90, step: 1, group: circuit_a}
@@ -173,9 +209,260 @@ registers:
   - {<<: *temp_measure, key: system_temp, address: 622, name: {pl: Temperatura zasilania systemu, en: System flow temperature}, group: aux}
   - {<<: *circuit_modes, key: aux_mode, address: 641, name: {pl: Tryb pracy obiegu AUX, en: AUX operating mode}, group: aux}
 
+  # Installation configuration
+  - {<<: *temp_setting, key: summer_winter_switch_temp, address: 8, name: {pl: Temp. zewnętrzna - górna granica grzania (lato/zima), en: Outdoor temperature upper heating limit (summer/winter)}, min: 15, max: 30.5, step: 0.5, group: installation}
+  - {<<: *temp_setting, key: outdoor_frost_protection_temp, address: 9, name: {pl: Temp. zewnętrzna włączająca ochronę przeciwzamrożeniową instalacji, en: Outdoor temperature enabling installation frost protection}, min: -9, max: 10, step: 1, group: installation}
+  - key: night_mode
+    address: 10
+    type: enum
+    kind: parameter
+    name: {pl: Tryb nocny, en: Night mode}
+    group: installation
+    values:
+      0: {pl: Stop, en: Stop}
+      1: {pl: Obniżenie, en: Reduction}
+  - {key: heating_pump_overrun, address: 11, type: uint, kind: parameter, name: {pl: Opóźnienie wyłączenia pompy c.o., en: Heating pump overrun time}, unit: min, min: 0, max: 15, step: 1, group: installation}
+  - {key: boiler_pump_overrun, address: 272, type: uint, kind: parameter, name: {pl: Min. wybieg pompy kotła, en: Boiler pump minimum overrun time}, unit: min, min: 1, max: 99, step: 1, group: installation}
+  - {key: building_inertia, address: 264, type: uint, kind: parameter, name: {pl: Bezwładność budynku, en: Building inertia}, min: 0, max: 10, step: 1, group: installation}
+  - {key: mixing_valve_band, address: 266, type: uint, kind: parameter, name: {pl: Pasmo zaworu 3-drogowego, en: 3-way valve band}, scale: 0.1, unit: K, min: 4, max: 16, step: 1, group: installation}
+  - {key: boiler_valve_offset, address: 267, type: uint, kind: parameter, name: {pl: Przesunięcie temp. między kotłem a zaworem 3-drogowym, en: Temperature offset between boiler and 3-way valve}, scale: 0.1, unit: K, min: 0, max: 16, step: 1, group: installation}
+  - {key: min_burner_run_time, address: 269, type: uint, kind: parameter, name: {pl: Min. czas pracy palnika, en: Burner minimum run time}, unit: s, min: 10, max: 180, step: 1, group: installation}
+  - {<<: *temp_setting, key: max_boiler_temp, address: 678, name: {pl: Maks. temperatura kotła, en: Boiler maximum temperature}, min: 20, max: 95, step: 1, group: installation}
+  - key: phone_input_action
+    address: 751
+    type: enum
+    kind: parameter
+    name: {pl: Działanie po aktywacji wejścia TEL, en: Action when TEL input is activated}
+    group: installation
+    values:
+      0: {pl: Ochrona przeciwzamrożeniowa, en: Frost protection}
+      1: {pl: Tor A, en: Circuit A}
+      2: {pl: Tor B, en: Circuit B}
+      3: {pl: Tor A+B, en: Circuits A+B}
+      4: {pl: Tor C, en: Circuit C}
+      5: {pl: Tor A+C, en: Circuits A+C}
+      6: {pl: Tor B+C, en: Circuits B+C}
+      7: {pl: Tor A+B+C, en: Circuits A+B+C}
+      8: {pl: Tor CWU, en: DHW}
+      9: {pl: Tor A+CWU, en: Circuit A+DHW}
+      10: {pl: Tor B+CWU, en: Circuit B+DHW}
+      11: {pl: Tor A+B+CWU, en: Circuits A+B+DHW}
+      12: {pl: Tor C+CWU, en: Circuit C+DHW}
+      13: {pl: Tor A+C+CWU, en: Circuits A+C+DHW}
+      14: {pl: Tor B+C+CWU, en: Circuits B+C+DHW}
+      16: {pl: Tor AUX, en: AUX}
+      17: {pl: Tor EVU, en: EVU}
+  - key: phone_input_contact
+    address: 752
+    type: enum
+    kind: parameter
+    name: {pl: Styk TEL, en: TEL contact}
+    group: installation
+    values:
+      0: {pl: Zamknięty, en: Closed}
+      1: {pl: Otwarty, en: Open}
+  - key: phone_output_event
+    address: 753
+    type: enum
+    kind: parameter
+    name: {pl: Zdarzenie aktywujące wyjście telefoniczne, en: Event activating the telephone output}
+    group: installation
+    values:
+      0: {pl: Błąd, en: Fault}
+      1: {pl: Przegląd, en: Inspection}
+      2: {pl: Błąd + przegląd, en: Fault + inspection}
+  - {key: stopped_circuits_1, address: 235, type: bits, kind: parameter, name: {pl: Zatrzymane obiegi N1, en: Stopped circuits for period 1}, bits: &stopped_circuits {a: {bit: 0, name: {pl: Obieg A, en: Circuit A}, writable: true}, b: {bit: 1, name: {pl: Obieg B, en: Circuit B}, writable: true}, c: {bit: 2, name: {pl: Obieg C, en: Circuit C}, writable: true}, dhw: {bit: 3, name: {pl: CWU, en: DHW}, writable: true}}, group: stop_periods, enabled_by_default: false}
+  - {key: stopped_circuits_2, address: 236, type: bits, kind: parameter, name: {pl: Zatrzymane obiegi N2, en: Stopped circuits for period 2}, bits: *stopped_circuits, group: stop_periods, enabled_by_default: false}
+  - {key: stopped_circuits_3, address: 237, type: bits, kind: parameter, name: {pl: Zatrzymane obiegi N3, en: Stopped circuits for period 3}, bits: *stopped_circuits, group: stop_periods, enabled_by_default: false}
+  - {key: stopped_circuits_4, address: 238, type: bits, kind: parameter, name: {pl: Zatrzymane obiegi N4, en: Stopped circuits for period 4}, bits: *stopped_circuits, group: stop_periods, enabled_by_default: false}
+  - {key: stopped_circuits_5, address: 239, type: bits, kind: parameter, name: {pl: Zatrzymane obiegi N5, en: Stopped circuits for period 5}, bits: *stopped_circuits, group: stop_periods, enabled_by_default: false}
+  - {key: stopped_circuits_6, address: 240, type: bits, kind: parameter, name: {pl: Zatrzymane obiegi N6, en: Stopped circuits for period 6}, bits: *stopped_circuits, group: stop_periods, enabled_by_default: false}
+  - {key: stopped_circuits_7, address: 241, type: bits, kind: parameter, name: {pl: Zatrzymane obiegi N7, en: Stopped circuits for period 7}, bits: *stopped_circuits, group: stop_periods, enabled_by_default: false}
+  - {key: stopped_circuits_8, address: 242, type: bits, kind: parameter, name: {pl: Zatrzymane obiegi N8, en: Stopped circuits for period 8}, bits: *stopped_circuits, group: stop_periods, enabled_by_default: false}
+  - {key: stopped_circuits_9, address: 243, type: bits, kind: parameter, name: {pl: Zatrzymane obiegi N9, en: Stopped circuits for period 9}, bits: *stopped_circuits, group: stop_periods, enabled_by_default: false}
+  - {key: stopped_circuits_10, address: 244, type: bits, kind: parameter, name: {pl: Zatrzymane obiegi N10, en: Stopped circuits for period 10}, bits: *stopped_circuits, group: stop_periods, enabled_by_default: false}
+  - {<<: *stop_day, key: stop_period_1_start_day, address: 309, name: {pl: Dzień początku zatrzymania N1, en: Stop period 1 start day}}
+  - {<<: *stop_month, key: stop_period_1_start_month, address: 310, name: {pl: Miesiąc początku zatrzymania N1, en: Stop period 1 start month}}
+  - {<<: *stop_day, key: stop_period_1_end_day, address: 311, name: {pl: Dzień końca zatrzymania N1, en: Stop period 1 end day}}
+  - {<<: *stop_month, key: stop_period_1_end_month, address: 312, name: {pl: Miesiąc końca zatrzymania N1, en: Stop period 1 end month}}
+  - {<<: *stop_day, key: stop_period_2_start_day, address: 313, name: {pl: Dzień początku zatrzymania N2, en: Stop period 2 start day}}
+  - {<<: *stop_month, key: stop_period_2_start_month, address: 314, name: {pl: Miesiąc początku zatrzymania N2, en: Stop period 2 start month}}
+  - {<<: *stop_day, key: stop_period_2_end_day, address: 315, name: {pl: Dzień końca zatrzymania N2, en: Stop period 2 end day}}
+  - {<<: *stop_month, key: stop_period_2_end_month, address: 316, name: {pl: Miesiąc końca zatrzymania N2, en: Stop period 2 end month}}
+  - {<<: *stop_day, key: stop_period_3_start_day, address: 317, name: {pl: Dzień początku zatrzymania N3, en: Stop period 3 start day}}
+  - {<<: *stop_month, key: stop_period_3_start_month, address: 318, name: {pl: Miesiąc początku zatrzymania N3, en: Stop period 3 start month}}
+  - {<<: *stop_day, key: stop_period_3_end_day, address: 319, name: {pl: Dzień końca zatrzymania N3, en: Stop period 3 end day}}
+  - {<<: *stop_month, key: stop_period_3_end_month, address: 320, name: {pl: Miesiąc końca zatrzymania N3, en: Stop period 3 end month}}
+  - {<<: *stop_day, key: stop_period_4_start_day, address: 321, name: {pl: Dzień początku zatrzymania N4, en: Stop period 4 start day}}
+  - {<<: *stop_month, key: stop_period_4_start_month, address: 322, name: {pl: Miesiąc początku zatrzymania N4, en: Stop period 4 start month}}
+  - {<<: *stop_day, key: stop_period_4_end_day, address: 323, name: {pl: Dzień końca zatrzymania N4, en: Stop period 4 end day}}
+  - {<<: *stop_month, key: stop_period_4_end_month, address: 324, name: {pl: Miesiąc końca zatrzymania N4, en: Stop period 4 end month}}
+  - {<<: *stop_day, key: stop_period_5_start_day, address: 325, name: {pl: Dzień początku zatrzymania N5, en: Stop period 5 start day}}
+  - {<<: *stop_month, key: stop_period_5_start_month, address: 326, name: {pl: Miesiąc początku zatrzymania N5, en: Stop period 5 start month}}
+  - {<<: *stop_day, key: stop_period_5_end_day, address: 327, name: {pl: Dzień końca zatrzymania N5, en: Stop period 5 end day}}
+  - {<<: *stop_month, key: stop_period_5_end_month, address: 328, name: {pl: Miesiąc końca zatrzymania N5, en: Stop period 5 end month}}
+  - {<<: *stop_day, key: stop_period_6_start_day, address: 329, name: {pl: Dzień początku zatrzymania N6, en: Stop period 6 start day}}
+  - {<<: *stop_month, key: stop_period_6_start_month, address: 330, name: {pl: Miesiąc początku zatrzymania N6, en: Stop period 6 start month}}
+  - {<<: *stop_day, key: stop_period_6_end_day, address: 331, name: {pl: Dzień końca zatrzymania N6, en: Stop period 6 end day}}
+  - {<<: *stop_month, key: stop_period_6_end_month, address: 332, name: {pl: Miesiąc końca zatrzymania N6, en: Stop period 6 end month}}
+  - {<<: *stop_day, key: stop_period_7_start_day, address: 333, name: {pl: Dzień początku zatrzymania N7, en: Stop period 7 start day}}
+  - {<<: *stop_month, key: stop_period_7_start_month, address: 334, name: {pl: Miesiąc początku zatrzymania N7, en: Stop period 7 start month}}
+  - {<<: *stop_day, key: stop_period_7_end_day, address: 335, name: {pl: Dzień końca zatrzymania N7, en: Stop period 7 end day}}
+  - {<<: *stop_month, key: stop_period_7_end_month, address: 336, name: {pl: Miesiąc końca zatrzymania N7, en: Stop period 7 end month}}
+  - {<<: *stop_day, key: stop_period_8_start_day, address: 337, name: {pl: Dzień początku zatrzymania N8, en: Stop period 8 start day}}
+  - {<<: *stop_month, key: stop_period_8_start_month, address: 338, name: {pl: Miesiąc początku zatrzymania N8, en: Stop period 8 start month}}
+  - {<<: *stop_day, key: stop_period_8_end_day, address: 339, name: {pl: Dzień końca zatrzymania N8, en: Stop period 8 end day}}
+  - {<<: *stop_month, key: stop_period_8_end_month, address: 340, name: {pl: Miesiąc końca zatrzymania N8, en: Stop period 8 end month}}
+  - {<<: *stop_day, key: stop_period_9_start_day, address: 341, name: {pl: Dzień początku zatrzymania N9, en: Stop period 9 start day}}
+  - {<<: *stop_month, key: stop_period_9_start_month, address: 342, name: {pl: Miesiąc początku zatrzymania N9, en: Stop period 9 start month}}
+  - {<<: *stop_day, key: stop_period_9_end_day, address: 343, name: {pl: Dzień końca zatrzymania N9, en: Stop period 9 end day}}
+  - {<<: *stop_month, key: stop_period_9_end_month, address: 344, name: {pl: Miesiąc końca zatrzymania N9, en: Stop period 9 end month}}
+  - {<<: *stop_day, key: stop_period_10_start_day, address: 345, name: {pl: Dzień początku zatrzymania N10, en: Stop period 10 start day}}
+  - {<<: *stop_month, key: stop_period_10_start_month, address: 346, name: {pl: Miesiąc początku zatrzymania N10, en: Stop period 10 start month}}
+  - {<<: *stop_day, key: stop_period_10_end_day, address: 347, name: {pl: Dzień końca zatrzymania N10, en: Stop period 10 end day}}
+  - {<<: *stop_month, key: stop_period_10_end_month, address: 348, name: {pl: Miesiąc końca zatrzymania N10, en: Stop period 10 end month}}
+
+  # Boiler measurements
+  - {<<: *temp_measure, key: avg_outdoor_temp, address: 102, name: {pl: Średnia temp. zewnętrzna, en: Average outdoor temperature}, group: boiler}
+  - {<<: *temp_measure, key: outdoor_temp, address: 601, name: {pl: Temperatura zewnętrzna, en: Outdoor temperature}, group: boiler}
+  - {key: max_fan_speed, address: 305, type: uint, kind: measure, name: {pl: Maks. prędkość wentylatora, en: Fan maximum speed}, unit: rpm, state_class: measurement, group: boiler, enabled_by_default: false}
+  - {key: boiler_type, address: 457, type: enum, kind: measure, name: {pl: Typ kotła, en: Boiler type}, values: *boiler_types, group: boiler}
+  - {key: primary_outputs, address: 474, type: bits, kind: measure, name: {pl: Stany wyjść pierwotnych, en: Primary outputs}, bits: {burner_1_1: {bit: 0, name: {pl: Palnik 1.1, en: Burner 1.1}}, burner_1_2: {bit: 1, name: {pl: Palnik 1.2, en: Burner 1.2}}, hydraulic_valve_opening: {bit: 2, name: {pl: Zawór hydrauliczny - otwieranie, en: Hydraulic valve opening}}, hydraulic_valve_closing: {bit: 3, name: {pl: Zawór hydrauliczny - zamykanie, en: Hydraulic valve closing}}, boiler_pump: {bit: 4, name: {pl: Pompa kotła, en: Boiler pump}}}, group: boiler}
+  - {key: secondary_outputs, address: 475, type: bits, kind: measure, name: {pl: Stany wyjść wtórnych, en: Secondary outputs}, bits: {dhw_pump: {bit: 0, name: {pl: Pompa CWU, en: DHW pump}}, circuit_a_pump: {bit: 1, name: {pl: Pompa obiegu A, en: Circuit A pump}}, circuit_b_pump: {bit: 4, name: {pl: Pompa obiegu B, en: Circuit B pump}}, circuit_b_valve_opening: {bit: 5, name: {pl: Obieg B - zawór 3D otwieranie, en: Circuit B 3-way valve opening}}, circuit_b_valve_closing: {bit: 6, name: {pl: Obieg B - zawór 3D zamykanie, en: Circuit B 3-way valve closing}}, circuit_c_pump: {bit: 7, name: {pl: Pompa obiegu C, en: Circuit C pump}}, circuit_c_valve_opening: {bit: 8, name: {pl: Obieg C - zawór 3D otwieranie, en: Circuit C 3-way valve opening}}, circuit_c_valve_closing: {bit: 9, name: {pl: Obieg C - zawór 3D zamykanie, en: Circuit C 3-way valve closing}}, aux_pump: {bit: 10, name: {pl: Pompa AUX, en: AUX pump}}, phone_output: {bit: 13, name: {pl: Wyjście telefoniczne, en: Telephone output}}}, group: boiler}
+  - {key: boiler_states, address: 735, type: bits, kind: measure, name: {pl: Stany kotła, en: Boiler states}, bits: {direct_circuit_off: {bit: 1, name: {pl: Obieg bezpośredni wyłączony, en: Direct circuit off}}, valve_circuit_off: {bit: 2, name: {pl: Obieg z zaworem 3D wyłączony, en: 3-way valve circuit off}}, secondary_pump: {bit: 3, name: {pl: Pompa wtórna, en: Secondary pump}}, burner_on: {bit: 4, name: {pl: Palnik włączony, en: Burner on}}, max_output_power: {bit: 5, name: {pl: Maks. moc wyjściowa, en: Maximum output power}}, cascade_fault: {bit: 15, name: {pl: Błąd kaskady, en: Cascade fault}}}, group: boiler}
+  - {key: heat_pump_states, address: 707, type: bits, kind: measure, name: {pl: Stany pompy ciepła, en: Heat pump states}, bits: {defrost: {bit: 1, name: {pl: Odszranianie, en: Defrost}}, backup_boiler_pump: {bit: 4, name: {pl: Pompa kotła - rezerwa, en: Backup boiler pump}}, backup_boiler: {bit: 5, name: {pl: Kocioł - rezerwa, en: Backup boiler}}, heat_pump: {bit: 8, name: {pl: Pompa PC, en: Heat pump}}, reserve_2: {bit: 11, name: {pl: Rezerwa 2, en: Reserve 2}}, reserve_1: {bit: 12, name: {pl: Rezerwa 1, en: Reserve 1}}, compressor: {bit: 15, name: {pl: Sprężarka, en: Compressor}}}, group: heat_pump, enabled_by_default: false}
+  - {key: boiler_power, address: 503, type: uint, kind: measure, name: {pl: Bieżąca moc kotła, en: Boiler current power}, unit: "%", state_class: measurement, group: boiler}
+  - {<<: *temp_measure, key: boiler_flow_temp, address: 602, name: {pl: Temperatura zasilania kotła, en: Boiler flow temperature}, group: boiler}
+  - {<<: *temp_measure, key: boiler_return_temp, address: 607, name: {pl: Temperatura powrotu, en: Return temperature}, group: boiler}
+  - {key: ionization_current, address: 608, type: uint, kind: measure, name: {pl: Prąd jonizacji, en: Ionization current}, scale: 0.1, unit: "µA", state_class: measurement, group: boiler}
+  - {key: fan_speed, address: 609, type: uint, kind: measure, name: {pl: Prędkość wentylatora, en: Fan speed}, unit: rpm, state_class: measurement, group: boiler}
+  - {key: water_pressure, address: 610, type: uint, kind: measure, name: {pl: Ciśnienie wody w instalacji, en: Water pressure}, scale: 0.1, unit: bar, device_class: pressure, state_class: measurement, group: boiler}
+  - {<<: *temp_measure, key: boiler_calculated_temp, address: 620, name: {pl: Obliczona temp. zadana kotła, en: Boiler calculated setpoint temperature}, group: boiler}
+  - {<<: *temp_measure, key: heat_pump_avg_flow_temp, address: 629, name: {pl: Średnia temp. czujnika zasilania (pompa ciepła), en: Average flow sensor temperature (heat pump)}, group: heat_pump, enabled_by_default: false}
+  - {key: input_0_10v, address: 634, type: uint, kind: measure, name: {pl: Napięcie na wejściu 0-10V, en: 0-10V input voltage}, scale: 0.1, unit: V, device_class: voltage, state_class: measurement, group: boiler, enabled_by_default: false}
+  - key: season_mode
+    address: 644
+    type: enum
+    kind: measure
+    name: {pl: Tryb pracy sezonowej, en: Seasonal mode}
+    group: boiler
+    values:
+      4: {pl: Lato, en: Summer}
+      5: {pl: Zima, en: Winter}
+  - key: heat_pump_mode
+    address: 708
+    type: enum
+    kind: measure
+    name: {pl: Status trybu pracy pompy ciepła, en: Heat pump operating status}
+    group: heat_pump
+    enabled_by_default: false
+    values:
+      0: {pl: Stop, en: Stop}
+      1: {pl: Grzanie, en: Heating}
+      2: {pl: Grzanie + sprężarka, en: Heating + compressor}
+      4: {pl: Chłodzenie, en: Cooling}
+      5: {pl: Chłodzenie + sprężarka włączona, en: Cooling + compressor on}
+  - {key: pcu_status, address: 710, type: uint, kind: measure, name: {pl: Status PCU, en: PCU status}, group: heat_pump, enabled_by_default: false}
+  - {key: pcu_substatus, address: 711, type: uint, kind: measure, name: {pl: Podstatus PCU, en: PCU substatus}, group: heat_pump, enabled_by_default: false}
+  - {<<: *temp_measure, key: system_calculated_temp, address: 734, name: {pl: Obliczona temp. zadana zasilania systemu, en: System calculated setpoint temperature}, group: boiler}
+
+  # Cascade
+  - {key: cascade_lead_boiler_setting, address: 63, type: uint, kind: parameter, name: {pl: Wybór kotła prowadzącego (0 = auto), en: Lead boiler selection (0 = auto)}, min: 0, max: 10, step: 1, group: cascade}
+  - {key: cascade_stages, address: 103, type: uint, kind: parameter, name: {pl: Pracujące stopnie, en: Active stages}, min: 0, max: 20, step: 1, group: cascade}
+  - {key: cascade_dhw_stages, address: 120, type: uint, kind: parameter, name: {pl: Pracujące stopnie w trybie CWU (0 = kocioł 1), en: Active stages in DHW mode (0 = boiler 1)}, min: 0, max: 20, step: 1, group: cascade}
+  - {<<: *temp_measure, key: cascade_temp, address: 733, name: {pl: Temperatura kaskady, en: Cascade temperature}, group: cascade}
+  - {key: cascade_lead_boiler, address: 64, type: uint, kind: measure, name: {pl: Numer bieżącego kotła prowadzącego, en: Current lead boiler number}, group: cascade}
+  - {key: cascade_boiler_count, address: 748, type: uint, kind: measure, name: {pl: Rozpoznane kotły w systemie, en: Detected boilers}, group: cascade}
+  - {key: cascade_vm_count, address: 749, type: uint, kind: measure, name: {pl: Rozpoznane moduły VM, en: Detected VM modules}, group: cascade}
+
+  # Service information
+  - {key: energy_counters_enabled, address: 787, type: enum, kind: parameter, name: {pl: Włączenie funkcji liczników energii, en: Energy counters enabled}, values: {0: {pl: Nie, en: "No"}, 1: {pl: Tak, en: "Yes"}}, group: service}
+  - {key: controller_software_version, address: 600, type: uint, kind: measure, name: {pl: Wersja oprogramowania regulatora, en: Controller software version}, group: service}
+  - {key: error_active, address: 500, type: enum, kind: measure, name: {pl: Błąd aktywny, en: Error active}, values: {0: {pl: Brak błędu, en: No error}, 1: {pl: Błąd, en: Error}}, group: service}
+  - {key: pcu_blocking, address: 712, type: uint, kind: measure, name: {pl: Blokowanie PCU, en: PCU blocking}, group: heat_pump, enabled_by_default: false}
+  - {key: pcu_lockout, address: 713, type: uint, kind: measure, name: {pl: Blokada PCU, en: PCU lockout}, group: heat_pump, enabled_by_default: false}
+  - {key: burner_starts_units, address: 507, type: uint, kind: measure, name: {pl: Liczba startów palnika (x1), en: Burner starts (x1)}, group: service, enabled_by_default: false}
+  - {key: burner_starts_tens, address: 508, type: uint, kind: measure, name: {pl: Liczba startów palnika (x10), en: Burner starts (x10)}, group: service, enabled_by_default: false}
+  - {key: burner_hours_units, address: 509, type: uint, kind: measure, name: {pl: Godziny pracy palnika (x1), en: Burner hours (x1)}, unit: h, group: service, enabled_by_default: false}
+  - {key: burner_hours_tens, address: 510, type: uint, kind: measure, name: {pl: Godziny pracy palnika (x10), en: Burner hours (x10)}, unit: h, group: service, enabled_by_default: false}
+  - {<<: *energy_part, key: heating_energy_mwh, address: 788, name: {pl: Energia elektryczna - grzanie (MWh), en: Electrical energy heating (MWh)}, unit: MWh}
+  - {<<: *energy_part, key: heating_energy_kwh, address: 789, name: {pl: Energia elektryczna - grzanie (kWh), en: Electrical energy heating (kWh)}, unit: kWh}
+  - {<<: *energy_part, key: heating_energy_wh, address: 790, name: {pl: Energia elektryczna - grzanie (Wh), en: Electrical energy heating (Wh)}, unit: Wh}
+  - {<<: *energy_part, key: dhw_energy_mwh, address: 791, name: {pl: Energia elektryczna - CWU (MWh), en: Electrical energy DHW (MWh)}, unit: MWh}
+  - {<<: *energy_part, key: dhw_energy_kwh, address: 792, name: {pl: Energia elektryczna - CWU (kWh), en: Electrical energy DHW (kWh)}, unit: kWh}
+  - {<<: *energy_part, key: dhw_energy_wh, address: 793, name: {pl: Energia elektryczna - CWU (Wh), en: Electrical energy DHW (Wh)}, unit: Wh}
+  - {<<: *energy_part, key: cooling_energy_mwh, address: 794, name: {pl: Energia elektryczna - chłodzenie (MWh), en: Electrical energy cooling (MWh)}, unit: MWh}
+  - {<<: *energy_part, key: cooling_energy_kwh, address: 795, name: {pl: Energia elektryczna - chłodzenie (kWh), en: Electrical energy cooling (kWh)}, unit: kWh}
+  - {<<: *energy_part, key: cooling_energy_wh, address: 796, name: {pl: Energia elektryczna - chłodzenie (Wh), en: Electrical energy cooling (Wh)}, unit: Wh}
+
+  # Solar installation: the manual gives no units or scaling, values are exposed raw
+  - {<<: *solar_raw, key: solar_dhw_setpoint, kind: parameter, address: 830, name: {pl: Temperatura CWU solarnej (TS), en: Solar DHW temperature setpoint (TS)}, min: 200, max: 800, step: 10}
+  - {<<: *solar_raw, key: solar_reference_delta_t, kind: parameter, address: 832, name: {pl: Delta T modulacji pompy solarnej (DT), en: Solar pump modulation delta T (DT)}, min: 100, max: 200, step: 1}
+  - {<<: *solar_raw, key: solar_collector_start_temp, kind: parameter, address: 833, name: {pl: Wymagana temp. kolektora do startu pompy (CX), en: Collector temperature required to start the pump (CX)}, min: 1000, max: 1250, step: 10}
+  - {<<: *solar_raw, key: solar_max_pump_time, kind: parameter, address: 834, name: {pl: Maks. czas pracy pompy na 100% przy starcie (tu), en: Maximum pump time at 100% on start (tu)}, min: 1, max: 5, step: 1}
+  - {<<: *solar_raw, key: solar_min_pump_speed, kind: parameter, address: 835, name: {pl: Min. praca pompy solarnej (PN), en: Solar pump minimum speed (PN)}, min: 50, max: 100, step: 5}
+  - {<<: *solar_raw, key: solar_tube_collector, kind: parameter, address: 836, name: {pl: Kolektor rurowy, en: Vacuum tube collector}, min: 0, max: 1, step: 1}
+  - {<<: *solar_raw, key: solar_max_flow, kind: parameter, address: 837, name: {pl: Maks. przepływ w obiegu solarnym (l/min), en: Maximum solar circuit flow (l/min)}, min: 0, max: 200, step: 1}
+  - {<<: *solar_raw, key: solar_manual_mode, kind: parameter, address: 838, name: {pl: Tryb ręczny, en: Manual mode}, min: 0, max: 1, step: 1}
+  - {<<: *solar_raw, key: solar_resol_table_type, kind: measure, address: 800, name: {pl: Typ tabeli Resol, en: Resol table type}}
+  - {<<: *solar_raw, key: solar_system_description, kind: measure, address: 801, name: {pl: Opis systemu, en: System description}}
+  - {<<: *solar_raw, key: solar_diemasol_type, kind: measure, address: 802, name: {pl: Typ Diemasol, en: Diemasol type}}
+  - {<<: *solar_raw, key: solar_collector_temp, kind: measure, address: 803, name: {pl: Temperatura kolektora słonecznego (TC), en: Solar collector temperature (TC)}}
+  - {<<: *solar_raw, key: solar_dhw_temp, kind: measure, address: 806, name: {pl: Temperatura CWU solarnej (TS), en: Solar DHW temperature (TS)}}
+  - {<<: *solar_raw, key: solar_pump_modulation, kind: measure, address: 811, name: {pl: Bieżący stopień modulacji pompy solarnej, en: Solar pump modulation}}
+  - {<<: *solar_raw, key: solar_energy_mwh, kind: measure, address: 813, name: {pl: Całkowita energia solarna (MW), en: Total solar energy (MW)}}
+  - {<<: *solar_raw, key: solar_energy_kwh, kind: measure, address: 814, name: {pl: Całkowita energia solarna (kW), en: Total solar energy (kW)}}
+  - {<<: *solar_raw, key: solar_energy_wh, kind: measure, address: 815, name: {pl: Całkowita energia solarna (W), en: Total solar energy (W)}}
+  - {<<: *solar_raw, key: solar_mcdb_status, kind: measure, address: 816, name: {pl: Status MCDB, en: MCDB status}}
+  - {<<: *solar_raw, key: solar_diemasol_version, kind: measure, address: 817, name: {pl: Wersja oprogramowania Diemasol, en: Diemasol software version}}
+
+  # System settings
+  - key: language
+    address: 263
+    type: enum
+    kind: parameter
+    name: {pl: Język, en: Language}
+    group: system
+    values:
+      0: {pl: Francuski, en: French}
+      1: {pl: Niemiecki, en: German}
+      2: {pl: Angielski, en: English}
+      3: {pl: Włoski, en: Italian}
+      4: {pl: Hiszpański, en: Spanish}
+      5: {pl: Niderlandzki, en: Dutch}
+      6: {pl: Polski, en: Polish}
+      7: {pl: Turecki, en: Turkish}
+      8: {pl: Rosyjski, en: Russian}
+  - {key: clock_hour, address: 679, type: uint, kind: parameter, name: {pl: Godzina, en: Clock hour}, unit: h, min: 0, max: 23, step: 1, group: system}
+  - {key: clock_minute, address: 680, type: uint, kind: parameter, name: {pl: Minuta, en: Clock minute}, unit: min, min: 0, max: 59, step: 1, group: system}
+  - key: clock_weekday
+    address: 681
+    type: enum
+    kind: parameter
+    name: {pl: Dzień tygodnia, en: Clock weekday}
+    group: system
+    values:
+      1: {pl: Poniedziałek, en: Monday}
+      2: {pl: Wtorek, en: Tuesday}
+      3: {pl: Środa, en: Wednesday}
+      4: {pl: Czwartek, en: Thursday}
+      5: {pl: Piątek, en: Friday}
+      6: {pl: Sobota, en: Saturday}
+      7: {pl: Niedziela, en: Sunday}
+  - {key: clock_day, address: 682, type: uint, kind: parameter, name: {pl: Dzień miesiąca, en: Clock day of month}, min: 1, max: 31, step: 1, group: system}
+  - {key: clock_month, address: 683, type: enum, kind: parameter, name: {pl: Miesiąc, en: Clock month}, values: *months, group: system}
+  - {key: clock_year, address: 684, type: uint, kind: parameter, name: {pl: Rok (dwie cyfry), en: Clock year (two digits)}, min: 14, max: 99, step: 1, group: system}
+
 time_programs:
   - {key: circuit_a_program, name: {pl: Program czasowy P4 obiegu A, en: Circuit A time program P4}, address: 126}
   - {key: circuit_b_program, name: {pl: Program czasowy P4 obiegu B, en: Circuit B time program P4}, address: 147}
   - {key: circuit_c_program, name: {pl: Program czasowy P4 obiegu C, en: Circuit C time program P4}, address: 168}
   - {key: dhw_program, name: {pl: Program czasowy CWU, en: DHW time program}, address: 189}
   - {key: aux_program, name: {pl: Program czasowy AUX, en: AUX time program}, address: 210}
+
+derived:
+  - {key: burner_starts, name: {pl: Liczba startów palnika, en: Burner starts}, terms: [{key: burner_starts_tens, factor: 10}, {key: burner_starts_units}], state_class: total_increasing, group: service}
+  - {key: burner_hours, name: {pl: Godziny pracy palnika, en: Burner operating hours}, terms: [{key: burner_hours_tens, factor: 10}, {key: burner_hours_units}], unit: h, device_class: duration, state_class: total_increasing, group: service}
+  - {key: heating_electrical_energy, name: {pl: Energia elektryczna - grzanie, en: Electrical energy heating}, terms: [{key: heating_energy_mwh, factor: 1000}, {key: heating_energy_kwh}, {key: heating_energy_wh, factor: 0.001}], unit: kWh, device_class: energy, state_class: total_increasing, group: service}
+  - {key: dhw_electrical_energy, name: {pl: Energia elektryczna - CWU, en: Electrical energy DHW}, terms: [{key: dhw_energy_mwh, factor: 1000}, {key: dhw_energy_kwh}, {key: dhw_energy_wh, factor: 0.001}], unit: kWh, device_class: energy, state_class: total_increasing, group: service}
+  - {key: cooling_electrical_energy, name: {pl: Energia elektryczna - chłodzenie, en: Electrical energy cooling}, terms: [{key: cooling_energy_mwh, factor: 1000}, {key: cooling_energy_kwh}, {key: cooling_energy_wh, factor: 0.001}], unit: kWh, device_class: energy, state_class: total_increasing, group: service}
