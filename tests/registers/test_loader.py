@@ -409,3 +409,78 @@ def test_mask_must_fit_in_a_register(mask):
     }
     with pytest.raises(MapError):
         parse_map(raw_with(registers=[register], time_programs=[], derived=[]))
+
+
+def timestamp_map(**overrides):
+    stamp = {
+        "key": "boiler_time",
+        "name": {"pl": "Czas kotła", "en": "Boiler time"},
+        "year": "y",
+        "month": "mo",
+        "day": "d",
+        "hour": "h",
+        "minute": "mi",
+        "group": "system",
+    }
+    stamp.update(overrides)
+    registers = [
+        {
+            "key": key,
+            "address": address,
+            "type": "uint",
+            "kind": "measure",
+            "name": key,
+            "group": "system",
+        }
+        for key, address in [("y", 1), ("mo", 2), ("d", 3), ("h", 4), ("mi", 5)]
+    ]
+    return {"system": "t", "name": "t", "registers": registers, "timestamps": [stamp]}
+
+
+def test_a_timestamp_is_loaded_with_its_localized_name_and_parts():
+    stamp = parse_map(timestamp_map(), "pl").timestamps[0]
+    assert stamp.name == "Czas kotła"
+    assert stamp.parts == ("y", "mo", "d", "h", "mi")
+
+
+@pytest.mark.parametrize(
+    ("override", "message"),
+    [
+        ({"hour": "nope"}, "unknown register"),
+        ({"key": "y"}, "duplicate key"),
+        ({"key": "Bad Key"}, "key"),
+    ],
+)
+def test_invalid_timestamps_are_rejected(override, message):
+    with pytest.raises(MapError, match=message):
+        parse_map(timestamp_map(**override))
+
+
+def test_every_component_of_a_timestamp_must_be_a_single_register():
+    data = timestamp_map()
+    data["registers"][3] = {
+        "key": "h",
+        "address": 20,
+        "type": "time_program",
+        "kind": "parameter",
+        "name": "h",
+    }
+    with pytest.raises(MapError, match="single register"):
+        parse_map(data)
+
+
+def test_a_timestamp_goes_when_one_of_its_registers_is_left_out():
+    loaded = parse_map(timestamp_map())
+    assert loaded.excluding(["mo"]).timestamps == ()
+    assert loaded.excluding(["system"]).timestamps == ()
+    assert loaded.excluding(["boiler_time"]).timestamps == ()
+    assert len(loaded.excluding(["boiler_time"]).registers) == 5
+
+
+def test_leaving_out_something_unrelated_keeps_the_timestamp():
+    data = timestamp_map()
+    data["registers"].append(
+        {"key": "other", "address": 9, "type": "uint", "kind": "measure", "name": "o", "group": "x"}
+    )
+    kept = parse_map(data).excluding(["other"])
+    assert [t.key for t in kept.timestamps] == ["boiler_time"]

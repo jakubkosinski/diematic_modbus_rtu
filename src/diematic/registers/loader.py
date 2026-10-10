@@ -17,6 +17,7 @@ from diematic.registers.model import (
     DerivedDef,
     MapFile,
     RegisterDef,
+    TimestampDef,
 )
 
 _DAYS: dict[str, tuple[str, ...]] = {
@@ -42,6 +43,7 @@ class RegisterMap:
     registers: tuple[RegisterDef, ...]
     derived: tuple[DerivedDef, ...]
     composites: tuple[ClimateDef, ...]
+    timestamps: tuple[TimestampDef, ...] = ()
     unfiltered: RegisterMap | None = field(default=None, repr=False, compare=False)
     _by_key: dict[str, RegisterDef] = field(init=False, repr=False, compare=False)
 
@@ -68,6 +70,8 @@ class RegisterMap:
         groups |= {d.group for d in self.derived if d.group}
         known = {r.key for r in self.registers}
         known |= {d.key for d in self.derived} | {c.key for c in self.composites} | groups
+        known |= {t.key for t in self.timestamps}
+        groups |= {t.group for t in self.timestamps if t.group}
         unknown = sorted(set(wanted) - known)
         if unknown:
             raise MapError(
@@ -92,11 +96,17 @@ class RegisterMap:
             if c.key not in chosen
             and {c.current_temperature, c.low, c.high, c.mode_register} <= present
         )
+        timestamps = tuple(
+            t
+            for t in self.timestamps
+            if t.key not in chosen and t.group not in chosen and set(t.parts) <= present
+        )
         return replace(
             self,
             registers=registers,
             derived=derived,
             composites=composites,
+            timestamps=timestamps,
             unfiltered=self.unfiltered or self,
         )
 
@@ -125,9 +135,11 @@ def _check_consistency(
     registers: list[RegisterDef],
     derived: Iterable[DerivedDef],
     composites: Iterable[ClimateDef] = (),
+    timestamps: Iterable[TimestampDef] = (),
 ) -> None:
     keys: set[str] = set()
-    for key in [r.key for r in registers] + [d.key for d in derived] + [c.key for c in composites]:
+    names = [r.key for r in registers] + [d.key for d in derived] + [c.key for c in composites]
+    for key in names + [t.key for t in timestamps]:
         if key in keys:
             raise MapError(f"duplicate key {key!r}")
         keys.add(key)
@@ -147,6 +159,13 @@ def _check_consistency(
     by_key = {r.key: r for r in registers}
     for climate in composites:
         _check_climate(climate, by_key)
+    for stamp in timestamps:
+        for part in stamp.parts:
+            component = by_key.get(part)
+            if component is None:
+                raise MapError(f"timestamp {stamp.key!r} references unknown register {part!r}")
+            if component.width != 1:
+                raise MapError(f"timestamp {stamp.key!r}: {part!r} must be a single register")
 
 
 def _check_climate(climate: ClimateDef, registers: dict[str, RegisterDef]) -> None:
@@ -191,7 +210,7 @@ def parse_map(raw: Any, language: str = DEFAULT_LANGUAGE) -> RegisterMap:
     except ValidationError as exc:
         raise MapError(str(exc)) from exc
     registers = [*data.registers, *_expand_time_programs(data, language)]
-    _check_consistency(registers, data.derived, data.composites)
+    _check_consistency(registers, data.derived, data.composites, data.timestamps)
     return RegisterMap(
         system=data.system,
         name=data.name,
@@ -202,6 +221,7 @@ def parse_map(raw: Any, language: str = DEFAULT_LANGUAGE) -> RegisterMap:
         registers=tuple(sorted(registers, key=lambda r: r.address)),
         derived=tuple(data.derived),
         composites=tuple(data.composites),
+        timestamps=tuple(data.timestamps),
     )
 
 

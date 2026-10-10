@@ -182,6 +182,24 @@ class ClimateDef(_Strict):
     enabled_by_default: bool = True
 
 
+class TimestampDef(_Strict):
+    """A moment composed of separate date and time registers (two-digit year)."""
+
+    key: str = Field(pattern=KEY_PATTERN)
+    name: Localized
+    year: str
+    month: str
+    day: str
+    hour: str
+    minute: str
+    group: str | None = None
+    enabled_by_default: bool = True
+
+    @property
+    def parts(self) -> tuple[str, str, str, str, str]:
+        return (self.year, self.month, self.day, self.hour, self.minute)
+
+
 class MapFile(_Strict):
     system: str = Field(pattern=KEY_PATTERN)
     name: str
@@ -193,3 +211,4 @@ class MapFile(_Strict):
     time_programs: list[TimeProgramDef] = []
     derived: list[DerivedDef] = []
     composites: list[ClimateDef] = []
+    timestamps: list[TimestampDef] = []
