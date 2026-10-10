@@ -7,7 +7,7 @@ from diematic.core.events import AvailabilityChanged, EventBus, ValueChanged
 from diematic.core.poller import Poller, PollIntervals
 from diematic.core.state import StateStore
 from diematic.modbus import rtu
-from diematic.modbus.bus import BusTimeout
+from diematic.modbus.bus import BusTimeout, SlaveNotAnswering
 from diematic.modbus.rtu import ModbusException
 from diematic.registers.loader import parse_map
 
@@ -37,6 +37,7 @@ class FakeBus:
         self.registers = registers
         self.reads = []
         self.script = []
+        self.silent = set()
 
     async def read_registers(self, start, count, *, max_wait=0):
         self.reads.append((start, count))
@@ -45,6 +46,8 @@ class FakeBus:
             if outcome is not None:
                 raise outcome
         addresses = range(start, start + count)
+        if self.silent.intersection(addresses):
+            raise SlaveNotAnswering("the slave did not answer")
         if any(a not in self.registers for a in addresses):
             raise ModbusException(rtu.FC_READ_HOLDING, rtu.EXC_ILLEGAL_ADDRESS)
         return [self.registers[a] for a in addresses]
@@ -53,11 +56,23 @@ class FakeBus:
         raise NotImplementedError
 
 
-def build(registers=None, regmap=None, **options):
+class Clock:
+    def __init__(self):
+        self.now = 1000.0
+
+    def __call__(self):
+        return self.now
+
+    def advance(self, seconds):
+        self.now += seconds
+
+
+def build(registers=None, regmap=None, clock=None, **options):
     regmap = regmap or make_map()
     bus = FakeBus(registers if registers is not None else {1: 11, 2: 22, 5: 55, 10: 100})
     events = EventBus()
     subscription = events.subscribe()
+    options.setdefault("clock", clock or Clock())
     poller = Poller(bus, regmap, StateStore(regmap), events, **options)
     return poller, bus, subscription
 
@@ -106,14 +121,17 @@ async def test_first_success_announces_the_boiler_online():
     assert poller.online is True
 
 
-async def test_boiler_goes_offline_after_consecutive_link_failures_and_recovers():
-    poller, bus, events = build(offline_after=3)
+async def test_boiler_goes_offline_after_a_stretch_without_answers_and_recovers():
+    clock = Clock()
+    poller, bus, events = build(clock=clock, offline_after=120)
     await poller.poll_group("fast")
     drain(events)
-    bus.script = [BusTimeout("x")] * 2
+    bus.script = [BusTimeout("no window")] * 2
+    clock.advance(60)
     assert await poller.poll_group("fast") is False
     assert poller.online is True
-    bus.script = [BusTimeout("x")] * 2
+    bus.script = [BusTimeout("no window")] * 2
+    clock.advance(70)
     await poller.poll_group("fast")
     assert poller.online is False
     assert AvailabilityChanged(False) in drain(events)
@@ -122,16 +140,23 @@ async def test_boiler_goes_offline_after_consecutive_link_failures_and_recovers(
 
 
 async def test_gateway_reporting_a_lost_boiler_counts_as_link_failure():
-    poller, bus, _ = build(offline_after=2)
+    clock = Clock()
+    poller, bus, _ = build(clock=clock, offline_after=120)
     lost = ModbusException(rtu.FC_READ_HOLDING, rtu.EXC_TARGET_NO_RESPONSE)
+    bus.script = [lost, lost]
+    await poller.poll_group("fast")
+    assert poller.online is None
+    clock.advance(130)
     bus.script = [lost, lost]
     await poller.poll_group("fast")
     assert poller.online is False
 
 
 async def test_write_pending_exception_does_not_affect_availability():
-    poller, bus, _ = build(offline_after=1)
+    clock = Clock()
+    poller, bus, _ = build(clock=clock, offline_after=1)
     await poller.poll_group("fast")
+    clock.advance(500)
     bus.script = [ModbusException(rtu.FC_READ_HOLDING, rtu.EXC_WRITE_PENDING)] * 2
     assert await poller.poll_group("fast") is True
     assert poller.online is True
@@ -202,3 +227,71 @@ async def test_availability_is_mirrored_into_the_state_store():
     assert state.online is None
     await poller.poll_group("fast")
     assert state.online is True
+
+
+async def test_registers_the_boiler_never_answers_are_found_and_skipped():
+    poller, bus, events = build()
+    bus.silent = {2}
+    await poller.poll_group("fast")
+    assert values(drain(events)) == {"a": 11, "c": 55}
+    assert poller.skipped == []
+    bus.reads.clear()
+    await poller.poll_group("fast")
+    assert poller.skipped == ["b"]
+    bus.reads.clear()
+    assert await poller.poll_group("fast") is True
+    assert bus.reads == [(1, 1), (5, 1)]
+    assert poller.online is True
+
+
+async def test_a_mute_register_never_makes_the_boiler_flap():
+    clock = Clock()
+    poller, bus, events = build(clock=clock, offline_after=120)
+    bus.silent = {2}
+    states = []
+    for _ in range(20):
+        await poller.poll_group("fast")
+        clock.advance(30)
+        states.append(poller.online)
+    assert states == [True] * 20
+    assert [e for e in drain(events) if isinstance(e, AvailabilityChanged)] == [
+        AvailabilityChanged(True)
+    ]
+
+
+async def test_one_missed_answer_does_not_condemn_a_register():
+    poller, bus, _ = build()
+    bus.silent = {2}
+    await poller.poll_group("fast")
+    bus.silent = set()
+    await poller.poll_group("fast")
+    bus.silent = {2}
+    await poller.poll_group("fast")
+    assert poller.skipped == []
+
+
+async def test_nothing_is_skipped_while_the_whole_link_is_down():
+    poller, bus, _ = build()
+    bus.silent = {1, 2, 5}
+    for _ in range(3):
+        await poller.poll_group("fast")
+    assert poller.skipped == []
+    assert set(bus.reads) == {(1, 2), (5, 1)}
+
+
+async def test_skipped_registers_are_tried_again_after_an_hour():
+    clock = Clock()
+    poller, bus, events = build(clock=clock)
+    bus.silent = {2}
+    await poller.poll_group("fast")
+    await poller.poll_group("fast")
+    assert poller.skipped == ["b"]
+    bus.silent = set()
+    clock.advance(3500)
+    await poller.poll_group("fast")
+    assert poller.skipped == ["b"]
+    clock.advance(200)
+    drain(events)
+    await poller.poll_group("fast")
+    assert poller.skipped == []
+    assert values(drain(events)).get("b") == 22

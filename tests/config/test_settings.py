@@ -42,6 +42,7 @@ def test_defaults_apply_to_unset_values(tmp_path):
     assert gateway.language == "pl"
     assert gateway.read_only is False and gateway.trailing_zero is True
     assert gateway.fast_interval == 30 and gateway.slow_interval == 300
+    assert gateway.offline_after == 120
 
 
 def test_environment_overrides_the_file(tmp_path, monkeypatch):
@@ -88,6 +89,7 @@ def test_errors_never_echo_the_offending_value(tmp_path):
         "slave_address: 300",
         "timezone: Mars/Olympus",
         "fast_interval: 0",
+        "offline_after: 5",
     ],
 )
 def test_out_of_range_values_are_rejected(tmp_path, extra):

@@ -52,7 +52,12 @@ def build_runtime(settings: AppSettings, discover: EntryPoints = installed_plugi
     events = EventBus()
     state = StateStore(regmap)
     poller = Poller(
-        bus, regmap, state, events, PollIntervals(gateway.fast_interval, gateway.slow_interval)
+        bus,
+        regmap,
+        state,
+        events,
+        PollIntervals(gateway.fast_interval, gateway.slow_interval),
+        offline_after=gateway.offline_after,
     )
     writer = Writer(bus, regmap, state, events, WriterOptions(read_only=gateway.read_only))
 

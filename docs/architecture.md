@@ -86,8 +86,9 @@ sequenceDiagram
 
 | Failure | Behaviour |
 |---|---|
-| Converter unreachable or link drops | `DiematicBus.run` reconnects with exponential backoff. Requests fail fast with `BusUnavailable`; the poller marks the boiler offline after three failed reads and retries every 10 s. |
-| Boiler lost behind a working converter | The gateway answers exceptions 0x0A/0x0B; counted as link failures like timeouts. |
+| Converter unreachable or link drops | `DiematicBus.run` reconnects with exponential backoff. Requests fail fast with `BusUnavailable`. The boiler is reported offline once no valid answer has arrived for `offline_after` seconds (120 by default), and polling retries every 10 s meanwhile. |
+| Boiler lost behind a working converter | The gateway answers exceptions 0x0A/0x0B; counted as missing answers like timeouts. |
+| A register the boiler never answers | Other reads still succeed, so the boiler stays online. After two missed cycles the register alone is skipped for an hour and then tried again; nothing is skipped while the whole link is down. |
 | Gateway rejects a read | Blocks are split, gap bridging is switched off, unsupported registers are skipped and re-probed hourly. |
 | Boiler talks while we wait for an answer | The request is requeued for the next window. |
 | Write not applied or acknowledgement lost | Retried, then confirmed by read-back; the outcome is published as a `SetResult`. |

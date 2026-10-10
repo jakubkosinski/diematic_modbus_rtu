@@ -82,6 +82,10 @@ exceptions below.
 | 0x0A | Device not detected or lost by the gateway | Link failure |
 | 0x0B | Gateway got no answer from the device yet | Link failure when polling; retry after a write |
 
+A late answer to a request that already timed out can arrive while the next request is in flight.
+Answers must carry the expected register count (reads) or range (writes), so such stragglers are
+counted as stale and ignored instead of failing the next request.
+
 ## Writes
 
 The gateway does not forward a write at once: it acknowledges, applies it later and answers

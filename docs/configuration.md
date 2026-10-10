@@ -25,6 +25,7 @@ value.
 | `connect_timeout` | `DIEMATIC_CONNECT_TIMEOUT` | `5` | Seconds to wait for the TCP connection. |
 | `fast_interval` | `DIEMATIC_FAST_INTERVAL` | `30` | Seconds between polls of the `fast` group. |
 | `slow_interval` | `DIEMATIC_SLOW_INTERVAL` | `300` | Seconds between polls of the `slow` group. |
+| `offline_after` | `DIEMATIC_OFFLINE_AFTER` | `120` | Seconds without a valid answer before the boiler counts as offline (minimum 10). |
 | `clock_sync` | `DIEMATIC_CLOCK_SYNC` | `false` | Set the boiler clock when it drifts. |
 | `timezone` | `DIEMATIC_TIMEZONE` | `UTC` | Time zone of the boiler clock (IANA name). |
 | `heartbeat_file` | `DIEMATIC_HEARTBEAT_FILE` | none | File touched every 10 s for health checks. |

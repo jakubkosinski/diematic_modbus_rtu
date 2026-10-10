@@ -89,6 +89,7 @@ class GatewaySettings(LayeredSettings):
     connect_timeout: float = Field(default=5.0, gt=0)
     fast_interval: float = Field(default=30.0, ge=1)
     slow_interval: float = Field(default=300.0, ge=1)
+    offline_after: float = Field(default=120.0, ge=10)
     clock_sync: bool = False
     timezone: str = "UTC"
     heartbeat_file: Path | None = None

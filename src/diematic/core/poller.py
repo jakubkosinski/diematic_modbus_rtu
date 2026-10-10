@@ -6,15 +6,18 @@ import asyncio
 import logging
 import time
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol
 
 from diematic.core.events import AvailabilityChanged, EventBus
 from diematic.core.state import StateStore
+from diematic.modbus.bus import SlaveNotAnswering
 from diematic.modbus.rtu import (
     EXC_ILLEGAL_ADDRESS,
     EXC_PATH_UNAVAILABLE,
     EXC_TARGET_NO_RESPONSE,
+    FrameError,
     ModbusError,
     ModbusException,
 )
@@ -50,8 +53,10 @@ class Poller:
         state: StateStore,
         events: EventBus,
         intervals: PollIntervals | None = None,
-        offline_after: int = 3,
+        offline_after: float = 120.0,
         request_wait: float = 60.0,
+        unsupported_after: int = 2,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._bus = bus
         self._regmap = regmap
@@ -60,10 +65,21 @@ class Poller:
         self._intervals = intervals or PollIntervals()
         self._offline_after = offline_after
         self._request_wait = request_wait
+        self._unsupported_after = unsupported_after
+        self._clock = clock
         self._max_gap = regmap.max_gap
         self._unsupported: dict[str, float] = {}
-        self._failures = 0
+        self._misses: dict[str, int] = {}
+        self._unproven: list[Block] = []
+        self._since = clock()
+        self._last_ok: float | None = None
         self.online: bool | None = None
+
+    @property
+    def skipped(self) -> list[str]:
+        """Keys of the registers currently left out because the boiler does not answer them."""
+        now = self._clock()
+        return sorted(key for key, until in self._unsupported.items() if until > now)
 
     async def run(self) -> None:
         due = dict.fromkeys(_GROUPS, 0.0)
@@ -77,8 +93,18 @@ class Poller:
 
     async def poll_group(self, group: str) -> bool:
         """Read every block of a poll group once. Returns False if the link misbehaved."""
+        self._unproven = []
+        healthy = await self._drain(deque(self._plan(group)))
+        if self._unproven and self._alive():
+            # These blocks got no answer before anything had proven the link works; now that
+            # other reads have succeeded, find out which of their registers are mute.
+            pending, self._unproven = self._unproven, []
+            retry = deque(part for block in pending for part in self._isolate(block))
+            healthy = await self._drain(retry) and healthy
+        return healthy
+
+    async def _drain(self, queue: deque[Block]) -> bool:
         healthy = True
-        queue = deque(self._plan(group))
         while queue:
             replacements, ok = await self._read_block(queue.popleft())
             healthy = healthy and ok
@@ -86,7 +112,7 @@ class Poller:
         return healthy
 
     def _plan(self, group: str) -> list[Block]:
-        now = time.monotonic()
+        now = self._clock()
         registers = [
             r
             for r in self._regmap.registers
@@ -105,16 +131,48 @@ class Poller:
                 return self._narrow(block), True
             logger.warning("registers %d-%d: %s", block.start, block.end - 1, exc)
             return [], exc.code not in _LINK_LOST_CODES
+        except (SlaveNotAnswering, FrameError) as exc:
+            logger.warning("reading registers %d-%d failed: %s", block.start, block.end - 1, exc)
+            return self._silent(block), False
         except ModbusError as exc:
             self._link(False)
             logger.warning("reading registers %d-%d failed: %s", block.start, block.end - 1, exc)
             return [], False
         self._link(True)
         for register in block.registers:
+            self._misses.pop(register.key, None)
             offset = register.address - block.start
             for event in self._state.ingest(register, words[offset : offset + register.width]):
                 self._events.publish(event)
         return [], True
+
+    def _silent(self, block: Block) -> list[Block]:
+        """A block got no answer. If the link is otherwise fine, find out which register is mute."""
+        self._link(False)
+        if not self._alive():
+            self._unproven.append(block)
+            return []
+        return self._isolate(block)
+
+    def _isolate(self, block: Block) -> list[Block]:
+        if len(block.registers) > 1:
+            return [Block(r.address, r.width, (r,)) for r in block.registers]
+        register = block.registers[0]
+        misses = self._misses.get(register.key, 0) + 1
+        if misses < self._unsupported_after:
+            self._misses[register.key] = misses
+            return []
+        self._misses.pop(register.key, None)
+        self._unsupported[register.key] = self._clock() + _UNSUPPORTED_RETRY
+        logger.info(
+            "register %s (%d) does not answer on this boiler; skipping it for an hour",
+            register.key,
+            block.start,
+        )
+        return []
+
+    def _alive(self) -> bool:
+        return self._last_ok is not None and self._clock() - self._last_ok < self._offline_after
 
     def _narrow(self, block: Block) -> list[Block]:
         """React to the gateway rejecting a block: read less per request."""
@@ -125,7 +183,7 @@ class Poller:
         if len(block.registers) > 1:
             return [Block(r.address, r.width, (r,)) for r in block.registers]
         register = block.registers[0]
-        self._unsupported[register.key] = time.monotonic() + _UNSUPPORTED_RETRY
+        self._unsupported[register.key] = self._clock() + _UNSUPPORTED_RETRY
         logger.info(
             "register %s (%d) is not supported by this device; skipping it",
             register.key,
@@ -134,12 +192,14 @@ class Poller:
         return []
 
     def _link(self, ok: bool) -> None:
+        """Record whether the boiler answered. It goes offline after a stretch without answers."""
+        now = self._clock()
         if ok:
-            self._failures = 0
+            self._last_ok = now
             self._set_online(True)
             return
-        self._failures += 1
-        if self._failures >= self._offline_after:
+        reference = self._since if self._last_ok is None else self._last_ok
+        if now - reference >= self._offline_after:
             self._set_online(False)
 
     def _set_online(self, online: bool) -> None:
