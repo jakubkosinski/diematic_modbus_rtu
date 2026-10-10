@@ -87,6 +87,25 @@ derived:
 
 The value is the weighted sum once every term is known. Use it for counters split over registers.
 
+### Timestamps
+
+```yaml
+timestamps:
+  - key: boiler_time
+    name: {pl: Czas kotła, en: Boiler time}
+    year: clock_year
+    month: clock_month
+    day: clock_day
+    hour: clock_hour
+    minute: clock_minute
+    group: system
+```
+
+Combines single registers into one moment, published as ISO 8601 with the offset of the
+configured `timezone`. The year is read as two digits (20xx). The parts use the raw register
+words, so a month that is an `enum` works. Give the parts `poll: fast` or the moment refreshes
+only as often as the slowest of them.
+
 ### Thermostats
 
 ```yaml

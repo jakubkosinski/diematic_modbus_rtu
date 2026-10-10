@@ -28,7 +28,7 @@ value.
 | `slow_interval` | `DIEMATIC_SLOW_INTERVAL` | `300` | Seconds between polls of the `slow` group. |
 | `offline_after` | `DIEMATIC_OFFLINE_AFTER` | `120` | Seconds without a valid answer before the boiler counts as offline (minimum 10). |
 | `clock_sync` | `DIEMATIC_CLOCK_SYNC` | `false` | Set the boiler clock when it drifts. |
-| `timezone` | `DIEMATIC_TIMEZONE` | `UTC` | Time zone of the boiler clock (IANA name). |
+| `timezone` | `DIEMATIC_TIMEZONE` | `UTC` | Time zone the boiler clock is set to (IANA name, e.g. `Europe/Warsaw`). The *Boiler time* sensor and `clock_sync` use it; with the wrong zone the time is shifted. |
 | `heartbeat_file` | `DIEMATIC_HEARTBEAT_FILE` | none | File touched every 10 s for health checks. |
 | `log_level` | `DIEMATIC_LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. |
 | `bus.*` | `DIEMATIC_BUS__*` | see [protocol](protocol.md) | `silence_gap`, `master_phase`, `cycle`, `cycle_guard`, `window`, `idle_open_after`, `response_timeout`. |

@@ -40,6 +40,7 @@ unknown registers and unknown flags are ignored with a warning.
 | Weekly program | `text`, validated by a pattern, enabled by default |
 | Derived value | `sensor` (energy totals, burner counters) |
 | Boiler link | `binary_sensor` *Boiler connection* (diagnostic) |
+| Date and time of the boiler | `sensor` *Boiler time* with `device_class: timestamp` |
 | Heating circuit | `climate` with night/day setpoints, `auto`/`heat`/`off` and `night`/`day` presets |
 
 Helper registers (split counters, the unit-less solar values, stop periods) are created disabled;
@@ -52,6 +53,15 @@ when the bridge itself is gone (`<prefix>/status` is `offline`). The state of th
 by the diagnostic **Boiler connection** binary sensor, which follows `<prefix>/boiler_status`.
 Set `MQTT_BOILER_AVAILABILITY=true` to make every entity unavailable while the boiler is offline
 as well.
+
+### Boiler time
+
+The *Boiler time* sensor combines the boiler's date and time registers into one moment, for
+example `2026-07-15T10:30:00+02:00`. The boiler stores no time zone, so the one from `timezone`
+([configuration](configuration.md)) is applied, including the summer and winter offset. Compare
+it with Home Assistant's own time to see whether the boiler clock has drifted, or turn on
+`clock_sync` to have it corrected. It refreshes at the fast poll interval and is unknown while a
+date is incomplete or impossible.
 
 ### The thermostat
 
