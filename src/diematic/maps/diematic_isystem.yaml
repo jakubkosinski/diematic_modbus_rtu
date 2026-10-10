@@ -603,3 +603,34 @@ derived:
   - {key: heating_electrical_energy, name: {pl: Energia elektryczna - grzanie, en: Electrical energy heating}, terms: [{key: heating_energy_mwh, factor: 1000}, {key: heating_energy_kwh}, {key: heating_energy_wh, factor: 0.001}], unit: kWh, device_class: energy, state_class: total_increasing, group: service}
   - {key: dhw_electrical_energy, name: {pl: Energia elektryczna - CWU, en: Electrical energy DHW}, terms: [{key: dhw_energy_mwh, factor: 1000}, {key: dhw_energy_kwh}, {key: dhw_energy_wh, factor: 0.001}], unit: kWh, device_class: energy, state_class: total_increasing, group: service}
   - {key: cooling_electrical_energy, name: {pl: Energia elektryczna - chłodzenie, en: Electrical energy cooling}, terms: [{key: cooling_energy_mwh, factor: 1000}, {key: cooling_energy_kwh}, {key: cooling_energy_wh, factor: 0.001}], unit: kWh, device_class: energy, state_class: total_increasing, group: service}
+
+composites:
+  - key: circuit_a
+    name: {pl: Obieg A, en: Circuit A}
+    current_temperature: circuit_a_room_temp
+    low: circuit_a_night_temp
+    high: circuit_a_day_temp
+    mode_register: circuit_a_forcing
+    modes: {auto: auto, heat: day, "off": frost_protection}
+    presets: {night: night, day: day}
+    exclusive: [frost_protection, night, day, auto]
+  - key: circuit_b
+    name: {pl: Obieg B, en: Circuit B}
+    current_temperature: circuit_b_room_temp
+    low: circuit_b_night_temp
+    high: circuit_b_day_temp
+    mode_register: circuit_b_forcing
+    modes: {auto: auto, heat: day, "off": frost_protection}
+    presets: {night: night, day: day}
+    exclusive: [frost_protection, night, day, auto]
+    enabled_by_default: false
+  - key: circuit_c
+    name: {pl: Obieg C, en: Circuit C}
+    current_temperature: circuit_c_room_temp
+    low: circuit_c_night_temp
+    high: circuit_c_day_temp
+    mode_register: circuit_c_forcing
+    modes: {auto: auto, heat: day, "off": frost_protection}
+    presets: {night: night, day: day}
+    exclusive: [frost_protection, night, day, auto]
+    enabled_by_default: false

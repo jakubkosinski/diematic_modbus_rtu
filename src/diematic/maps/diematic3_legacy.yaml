@@ -76,3 +76,24 @@ registers:
       28: {pl: Zadziałanie STB kotła, en: Boiler STB tripped}
       30: {pl: Reset sterownika palnika, en: Burner controller reset}
       31: {pl: Awaria czujnika spalin, en: Flue gas sensor failure}
+
+composites:
+  - key: circuit_a
+    name: {pl: Obieg A, en: Circuit A}
+    current_temperature: circuit_a_room_temp
+    low: circuit_a_night_temp
+    high: circuit_a_day_temp
+    mode_register: circuit_a_mode
+    modes: {auto: auto, heat: day, "off": frost_protection}
+    presets: {night: night, day: day}
+    exclusive: [frost_protection, night, day, auto, circuit_temperature_controlled]
+  - key: circuit_b
+    name: {pl: Obieg B, en: Circuit B}
+    current_temperature: circuit_b_room_temp
+    low: circuit_b_night_temp
+    high: circuit_b_day_temp
+    mode_register: circuit_b_mode
+    modes: {auto: auto, heat: day, "off": frost_protection}
+    presets: {night: night, day: day}
+    exclusive: [frost_protection, night, day, auto, circuit_temperature_controlled]
+    enabled_by_default: false

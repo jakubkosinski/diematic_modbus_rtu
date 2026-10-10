@@ -143,3 +143,19 @@ def test_legacy_reads_in_large_blocks():
     loaded = load_map("diematic3_legacy")
     assert (loaded.max_block, loaded.max_gap) == (64, 8)
     assert load_map("diematic_isystem").max_block == 40
+
+
+@pytest.mark.parametrize(
+    ("name", "circuits"),
+    [
+        ("diematic_isystem", {"circuit_a", "circuit_b", "circuit_c"}),
+        ("diematic3_legacy", {"circuit_a", "circuit_b"}),
+    ],
+)
+def test_shipped_maps_declare_a_thermostat_per_circuit(name, circuits):
+    loaded = load_map(name)
+    assert {c.key for c in loaded.composites} == circuits
+    first = loaded.composites[0]
+    assert first.enabled_by_default
+    assert all(not c.enabled_by_default for c in loaded.composites[1:])
+    assert set(first.modes) == {"auto", "heat", "off"}
