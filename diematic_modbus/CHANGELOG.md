@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2
+
+- The day and night DHW temperature settings now go down to 10 °C, as on the boiler itself; they
+  were limited to 40 °C.
+
 ## 0.2.1
 
 - Fixed the *Boiler time* sensor showing a time shifted by your offset from UTC (two hours in
