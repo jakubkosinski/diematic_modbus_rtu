@@ -570,14 +570,15 @@ registers:
       6: {pl: Rosyjski, en: Russian}
       7: {pl: Polski, en: Polish}
       8: {pl: Turecki, en: Turkish}
-  - {key: clock_hour, address: 679, type: uint, kind: parameter, name: {pl: Godzina, en: Clock hour}, unit: h, min: 0, max: 23, step: 1, group: system}
-  - {key: clock_minute, address: 680, type: uint, kind: parameter, name: {pl: Minuta, en: Clock minute}, unit: min, min: 0, max: 59, step: 1, group: system}
+  - {key: clock_hour, address: 679, type: uint, kind: parameter, name: {pl: Godzina, en: Clock hour}, unit: h, min: 0, max: 23, step: 1, poll: fast, group: system}
+  - {key: clock_minute, address: 680, type: uint, kind: parameter, name: {pl: Minuta, en: Clock minute}, unit: min, min: 0, max: 59, step: 1, poll: fast, group: system}
   - key: clock_weekday
     address: 681
     type: enum
     kind: parameter
     name: {pl: Dzień tygodnia, en: Clock weekday}
     group: system
+    poll: fast
     values:
       1: {pl: Poniedziałek, en: Monday}
       2: {pl: Wtorek, en: Tuesday}
@@ -586,9 +587,9 @@ registers:
       5: {pl: Piątek, en: Friday}
       6: {pl: Sobota, en: Saturday}
       7: {pl: Niedziela, en: Sunday}
-  - {key: clock_day, address: 682, type: uint, kind: parameter, name: {pl: Dzień miesiąca, en: Clock day of month}, min: 1, max: 31, step: 1, group: system}
-  - {key: clock_month, address: 683, type: enum, kind: parameter, name: {pl: Miesiąc, en: Clock month}, values: *months, group: system}
-  - {key: clock_year, address: 684, type: uint, kind: parameter, name: {pl: Rok (dwie cyfry), en: Clock year (two digits)}, min: 14, max: 99, step: 1, group: system}
+  - {key: clock_day, address: 682, type: uint, kind: parameter, name: {pl: Dzień miesiąca, en: Clock day of month}, min: 1, max: 31, step: 1, poll: fast, group: system}
+  - {key: clock_month, address: 683, type: enum, kind: parameter, name: {pl: Miesiąc, en: Clock month}, values: *months, poll: fast, group: system}
+  - {key: clock_year, address: 684, type: uint, kind: parameter, name: {pl: Rok (dwie cyfry), en: Clock year (two digits)}, min: 14, max: 99, step: 1, poll: fast, group: system}
 
 time_programs:
   - {key: circuit_a_program, name: {pl: Program czasowy P4 obiegu A, en: Circuit A time program P4}, address: 126, group: circuit_a}
@@ -634,3 +635,13 @@ composites:
     presets: {night: night, day: day}
     exclusive: [frost_protection, night, day, auto]
     enabled_by_default: false
+
+timestamps:
+  - key: boiler_time
+    name: {pl: Czas kotła, en: Boiler time}
+    year: clock_year
+    month: clock_month
+    day: clock_day
+    hour: clock_hour
+    minute: clock_minute
+    group: system

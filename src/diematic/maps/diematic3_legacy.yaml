@@ -17,7 +17,7 @@ templates:
     dhw_constant: {bit: 4, name: {pl: CWU stała, en: DHW constant}, writable: true}
     circuit_temperature_controlled: {bit: 5, name: {pl: Obieg wg temperatury, en: Circuit temperature controlled}, writable: true}
     dhw_temperature_controlled: {bit: 6, name: {pl: CWU wg temperatury, en: DHW temperature controlled}, writable: true}
-  clock: &clock {type: uint, kind: parameter, group: system}
+  clock: &clock {type: uint, kind: parameter, poll: fast, group: system}
 
 registers:
   - {key: software_release, address: 3, type: uint, kind: measure, name: {pl: Wersja oprogramowania regulatora, en: Controller software version}, group: service}
@@ -48,9 +48,9 @@ registers:
   - {<<: *dhw_setpoint, key: dhw_night_temp, address: 96, name: {pl: Zadana temp. CWU w nocy, en: DHW night temperature}, group: dhw}
 
   - {<<: *temp_measure, key: boiler_flow_temp, address: 75, name: {pl: Temperatura kotła, en: Boiler temperature}, group: boiler}
-  - {key: clock_day, address: 108, type: uint, kind: parameter, name: {pl: Dzień miesiąca, en: Clock day of month}, min: 1, max: 31, step: 1, group: system}
-  - {key: clock_month, address: 109, type: uint, kind: parameter, name: {pl: Miesiąc, en: Clock month}, min: 1, max: 12, step: 1, group: system}
-  - {key: clock_year, address: 110, type: uint, kind: parameter, name: {pl: Rok (dwie cyfry), en: Clock year (two digits)}, min: 14, max: 99, step: 1, group: system}
+  - {key: clock_day, address: 108, type: uint, kind: parameter, name: {pl: Dzień miesiąca, en: Clock day of month}, min: 1, max: 31, step: 1, poll: fast, group: system}
+  - {key: clock_month, address: 109, type: uint, kind: parameter, name: {pl: Miesiąc, en: Clock month}, min: 1, max: 12, step: 1, poll: fast, group: system}
+  - {key: clock_year, address: 110, type: uint, kind: parameter, name: {pl: Rok (dwie cyfry), en: Clock year (two digits)}, min: 14, max: 99, step: 1, poll: fast, group: system}
 
   - {key: boiler_states, address: 427, type: bits, kind: measure, name: {pl: Stany kotła, en: Boiler states}, bits: {burner_on: {bit: 3, name: {pl: Palnik włączony, en: Burner on}}, circuit_a_pump: {bit: 4, name: {pl: Pompa obiegu A, en: Circuit A pump}}, dhw_pump: {bit: 5, name: {pl: Pompa CWU, en: DHW pump}}}, group: boiler}
   - {key: circuit_options, address: 428, type: bits, kind: measure, name: {pl: Opcje obiegów B i C, en: Circuit B and C options}, bits: {circuit_b_pump: {bit: 4, name: {pl: Pompa obiegu B, en: Circuit B pump}}}, group: boiler}
@@ -97,3 +97,13 @@ composites:
     presets: {night: night, day: day}
     exclusive: [frost_protection, night, day, auto, circuit_temperature_controlled]
     enabled_by_default: false
+
+timestamps:
+  - key: boiler_time
+    name: {pl: Czas kotła, en: Boiler time}
+    year: clock_year
+    month: clock_month
+    day: clock_day
+    hour: clock_hour
+    minute: clock_minute
+    group: system

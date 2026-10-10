@@ -209,3 +209,68 @@ def test_the_active_program_ignores_the_high_flag_bit(circuit, raw, expected):
 )
 def test_regulator_language_numbers_match_a_real_boiler(raw, english):
     assert load_map("diematic_isystem").get("language").codec.decode([raw]) == english
+
+
+CLOCK_KEYS = (
+    "clock_hour",
+    "clock_minute",
+    "clock_weekday",
+    "clock_day",
+    "clock_month",
+    "clock_year",
+)
+
+
+@pytest.mark.parametrize("name", SHIPPED_MAPS)
+def test_both_maps_declare_the_boiler_time_from_their_clock_registers(name):
+    loaded = load_map(name)
+    stamp = loaded.timestamps[0]
+    assert stamp.key == "boiler_time"
+    assert set(stamp.parts) == {
+        "clock_year",
+        "clock_month",
+        "clock_day",
+        "clock_hour",
+        "clock_minute",
+    }
+    assert all(part in loaded for part in stamp.parts)
+
+
+@pytest.mark.parametrize("name", SHIPPED_MAPS)
+def test_the_clock_is_polled_often_enough_for_a_useful_time(name):
+    loaded = load_map(name)
+    assert {loaded.get(key).poll_group for key in CLOCK_KEYS} == {"fast"}
+
+
+@pytest.mark.parametrize("name", SHIPPED_MAPS)
+def test_the_boiler_time_is_composed_from_the_real_registers_in_the_configured_zone(name):
+    from zoneinfo import ZoneInfo
+
+    from diematic.core.state import StateStore
+
+    loaded = load_map(name)
+    store = StateStore(loaded, ZoneInfo("Europe/Warsaw"))
+    words = {
+        "clock_hour": 10,
+        "clock_minute": 30,
+        "clock_weekday": 3,
+        "clock_day": 15,
+        "clock_month": 7,
+        "clock_year": 26,
+    }
+    for key, word in words.items():
+        store.ingest(loaded.get(key), [word])
+    assert store.value("boiler_time") == "2026-07-15T10:30:00+02:00"
+
+
+def test_the_isystem_clock_registers_are_read_in_one_block():
+    from diematic.registers.planner import plan_blocks
+
+    loaded = load_map("diematic_isystem")
+    fast = [r for r in loaded.registers if r.poll_group == "fast"]
+    blocks = plan_blocks(fast, loaded.max_block, loaded.max_gap)
+    assert any((b.start, b.count) == (679, 6) for b in blocks)
+
+
+def test_leaving_out_the_system_group_also_drops_the_boiler_time():
+    assert load_map("diematic_isystem").excluding(["system"]).timestamps == ()
