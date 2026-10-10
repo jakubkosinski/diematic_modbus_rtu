@@ -11,7 +11,13 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
-from diematic.registers.model import DEFAULT_LANGUAGE, DerivedDef, MapFile, RegisterDef
+from diematic.registers.model import (
+    DEFAULT_LANGUAGE,
+    ClimateDef,
+    DerivedDef,
+    MapFile,
+    RegisterDef,
+)
 
 _DAYS: dict[str, tuple[str, ...]] = {
     "en": ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"),
@@ -35,6 +41,7 @@ class RegisterMap:
     language: str
     registers: tuple[RegisterDef, ...]
     derived: tuple[DerivedDef, ...]
+    composites: tuple[ClimateDef, ...]
     _by_key: dict[str, RegisterDef] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
@@ -67,9 +74,13 @@ def _expand_time_programs(data: MapFile, language: str) -> list[RegisterDef]:
     return expanded
 
 
-def _check_consistency(registers: list[RegisterDef], derived: Iterable[DerivedDef]) -> None:
+def _check_consistency(
+    registers: list[RegisterDef],
+    derived: Iterable[DerivedDef],
+    composites: Iterable[ClimateDef] = (),
+) -> None:
     keys: set[str] = set()
-    for key in [r.key for r in registers] + [d.key for d in derived]:
+    for key in [r.key for r in registers] + [d.key for d in derived] + [c.key for c in composites]:
         if key in keys:
             raise MapError(f"duplicate key {key!r}")
         keys.add(key)
@@ -86,6 +97,32 @@ def _check_consistency(registers: list[RegisterDef], derived: Iterable[DerivedDe
         for term in item.terms:
             if term.key not in registered:
                 raise MapError(f"derived {item.key!r} references unknown register {term.key!r}")
+    by_key = {r.key: r for r in registers}
+    for climate in composites:
+        _check_climate(climate, by_key)
+
+
+def _check_climate(climate: ClimateDef, registers: dict[str, RegisterDef]) -> None:
+    for role in ("current_temperature", "low", "high", "mode_register"):
+        if getattr(climate, role) not in registers:
+            raise MapError(f"climate {climate.key!r}: unknown register for {role}")
+    for role in ("low", "high"):
+        setpoint = registers[getattr(climate, role)]
+        if not setpoint.is_writable or setpoint.type not in {"temp", "uint"}:
+            raise MapError(f"climate {climate.key!r}: {role} must be a writable number")
+    mode = registers[climate.mode_register]
+    if mode.type != "bits" or mode.bits is None:
+        raise MapError(f"climate {climate.key!r}: mode_register must be a flags register")
+    flags = [*climate.modes.values(), *climate.presets.values(), *climate.exclusive]
+    for flag in flags:
+        definition = mode.bits.get(flag)
+        if definition is None:
+            raise MapError(f"climate {climate.key!r}: unknown flag {flag!r}")
+        if not definition.writable:
+            raise MapError(f"climate {climate.key!r}: flag {flag!r} is read-only")
+    for flag in [*climate.modes.values(), *climate.presets.values()]:
+        if flag not in climate.exclusive:
+            raise MapError(f"climate {climate.key!r}: flag {flag!r} must be listed in exclusive")
 
 
 def _read_source(source: str | Path) -> str:
@@ -107,7 +144,7 @@ def parse_map(raw: Any, language: str = DEFAULT_LANGUAGE) -> RegisterMap:
     except ValidationError as exc:
         raise MapError(str(exc)) from exc
     registers = [*data.registers, *_expand_time_programs(data, language)]
-    _check_consistency(registers, data.derived)
+    _check_consistency(registers, data.derived, data.composites)
     return RegisterMap(
         system=data.system,
         name=data.name,
@@ -117,6 +154,7 @@ def parse_map(raw: Any, language: str = DEFAULT_LANGUAGE) -> RegisterMap:
         language=language,
         registers=tuple(sorted(registers, key=lambda r: r.address)),
         derived=tuple(data.derived),
+        composites=tuple(data.composites),
     )
 
 

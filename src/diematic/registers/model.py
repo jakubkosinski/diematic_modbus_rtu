@@ -155,6 +155,25 @@ class TimeProgramDef(_Strict):
     writable: bool = True
 
 
+class ClimateDef(_Strict):
+    """A heating circuit presented as a thermostat.
+
+    Modes and presets name flags of `mode_register`; setting one clears the other flags listed
+    in `exclusive`, leaving unrelated flags (e.g. DHW bits) untouched.
+    """
+
+    key: str = Field(pattern=KEY_PATTERN)
+    name: Localized
+    current_temperature: str
+    low: str
+    high: str
+    mode_register: str
+    modes: dict[Literal["auto", "heat", "off"], str] = Field(min_length=1)
+    presets: dict[str, str] = {}
+    exclusive: list[str] = Field(min_length=1)
+    enabled_by_default: bool = True
+
+
 class MapFile(_Strict):
     system: str = Field(pattern=KEY_PATTERN)
     name: str
@@ -165,3 +184,4 @@ class MapFile(_Strict):
     registers: list[RegisterDef] = []
     time_programs: list[TimeProgramDef] = []
     derived: list[DerivedDef] = []
+    composites: list[ClimateDef] = []

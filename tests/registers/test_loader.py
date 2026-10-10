@@ -217,3 +217,71 @@ def test_block_limits_default_and_override():
 def test_invalid_block_limits_rejected(limits):
     with pytest.raises(MapError):
         parse_map(raw_with(**limits))
+
+
+def climate_map(**overrides):
+    climate = {
+        "key": "circuit_a",
+        "name": {"pl": "Obieg A", "en": "Circuit A"},
+        "current_temperature": "room",
+        "low": "night",
+        "high": "day",
+        "mode_register": "flags",
+        "modes": {"auto": "auto", "heat": "day_flag", "off": "frost"},
+        "presets": {"night": "night_flag"},
+        "exclusive": ["auto", "day_flag", "night_flag", "frost"],
+    }
+    climate.update(overrides)
+    setpoint = {"type": "temp", "kind": "parameter", "min": 5, "max": 30, "step": 0.5}
+    return {
+        "system": "t",
+        "name": "t",
+        "registers": [
+            {"key": "room", "address": 1, "type": "temp", "kind": "measure", "name": "Room"},
+            {**setpoint, "key": "night", "address": 2, "name": "Night"},
+            {**setpoint, "key": "day", "address": 3, "name": "Day"},
+            {
+                "key": "flags",
+                "address": 4,
+                "type": "bits",
+                "kind": "parameter",
+                "name": "Flags",
+                "bits": {
+                    "auto": {"bit": 3, "name": "Auto", "writable": True},
+                    "day_flag": {"bit": 2, "name": "Day", "writable": True},
+                    "night_flag": {"bit": 1, "name": "Night", "writable": True},
+                    "frost": {"bit": 0, "name": "Frost", "writable": True},
+                    "locked": {"bit": 7, "name": "Locked"},
+                },
+            },
+        ],
+        "composites": [climate],
+    }
+
+
+def test_climate_composite_is_loaded_with_its_localized_name():
+    loaded = parse_map(climate_map(), "pl")
+    assert loaded.composites[0].name == "Obieg A"
+    assert loaded.composites[0].modes["heat"] == "day_flag"
+
+
+@pytest.mark.parametrize(
+    ("override", "message"),
+    [
+        ({"current_temperature": "nope"}, "unknown register"),
+        ({"high": "room"}, "writable number"),
+        ({"mode_register": "day"}, "flags register"),
+        ({"modes": {"auto": "missing"}}, "unknown flag"),
+        ({"modes": {"auto": "locked"}, "exclusive": ["auto", "locked"]}, "read-only"),
+        ({"exclusive": ["auto"]}, "must be listed in exclusive"),
+        ({"key": "room"}, "duplicate key"),
+    ],
+)
+def test_invalid_climate_definitions_are_rejected(override, message):
+    with pytest.raises(MapError, match=message):
+        parse_map(climate_map(**override))
+
+
+def test_unknown_mode_name_is_rejected_by_the_schema():
+    with pytest.raises(MapError):
+        parse_map(climate_map(modes={"turbo": "auto"}))
