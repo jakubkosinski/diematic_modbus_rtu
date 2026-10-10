@@ -50,7 +50,7 @@ def build_runtime(settings: AppSettings, discover: EntryPoints = installed_plugi
         gateway.trailing_zero,
     )
     events = EventBus()
-    state = StateStore(regmap)
+    state = StateStore(regmap, ZoneInfo(gateway.timezone))
     poller = Poller(
         bus,
         regmap,

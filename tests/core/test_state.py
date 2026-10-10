@@ -1,3 +1,5 @@
+from zoneinfo import ZoneInfo
+
 import pytest
 
 from diematic.core.events import ValueChanged
@@ -109,3 +111,98 @@ def test_snapshot_lists_everything_known(store, regmap):
     store.ingest(regmap.get("tens"), [1])
     store.ingest(regmap.get("units"), [2])
     assert {e.key: e.value for e in store.snapshot()} == {"tens": 1, "units": 2, "starts": 12}
+
+
+CLOCK_MAP = {
+    "system": "t",
+    "name": "t",
+    "registers": [
+        {"key": "year", "address": 1, "type": "uint", "kind": "parameter", "name": "Y"},
+        {
+            "key": "month",
+            "address": 2,
+            "type": "enum",
+            "kind": "parameter",
+            "name": "M",
+            "values": {7: "July", 12: "December"},
+        },
+        {"key": "day", "address": 3, "type": "uint", "kind": "parameter", "name": "D"},
+        {"key": "hour", "address": 4, "type": "uint", "kind": "parameter", "name": "H"},
+        {"key": "minute", "address": 5, "type": "uint", "kind": "parameter", "name": "Mi"},
+    ],
+    "timestamps": [
+        {
+            "key": "boiler_time",
+            "name": "Boiler time",
+            "year": "year",
+            "month": "month",
+            "day": "day",
+            "hour": "hour",
+            "minute": "minute",
+        }
+    ],
+}
+
+
+def feed_clock(store, regmap, **words):
+    events = []
+    for key, word in words.items():
+        events += store.ingest(regmap.get(key), [word])
+    return events
+
+
+def stamp_events(events):
+    return [e for e in events if e.key == "boiler_time"]
+
+
+class TestTimestamp:
+    def setup_method(self):
+        self.regmap = parse_map(CLOCK_MAP)
+
+    def test_nothing_is_published_until_every_part_is_known(self):
+        store = StateStore(self.regmap)
+        events = feed_clock(store, self.regmap, year=26, month=7, day=15, hour=10)
+        assert stamp_events(events) == []
+
+    def test_the_moment_is_composed_in_the_configured_zone(self):
+        store = StateStore(self.regmap, ZoneInfo("Europe/Warsaw"))
+        events = feed_clock(store, self.regmap, year=26, month=7, day=15, hour=10, minute=30)
+        assert stamp_events(events)[-1].value == "2026-07-15T10:30:00+02:00"
+
+    def test_the_offset_follows_daylight_saving_time(self):
+        store = StateStore(self.regmap, ZoneInfo("Europe/Warsaw"))
+        feed_clock(store, self.regmap, year=26, month=7, day=15, hour=10, minute=30)
+        events = feed_clock(store, self.regmap, month=12)
+        assert stamp_events(events)[-1].value == "2026-12-15T10:30:00+01:00"
+
+    def test_the_default_zone_is_utc(self):
+        store = StateStore(self.regmap)
+        feed_clock(store, self.regmap, year=26, month=7, day=15, hour=10, minute=30)
+        assert store.value("boiler_time") == "2026-07-15T10:30:00+00:00"
+
+    def test_a_month_given_as_an_enum_label_still_composes(self):
+        store = StateStore(self.regmap)
+        feed_clock(store, self.regmap, year=26, month=12, day=1, hour=0, minute=0)
+        assert store.value("month") == "December"
+        assert store.value("boiler_time") == "2026-12-01T00:00:00+00:00"
+
+    def test_it_follows_the_clock_and_stays_quiet_when_nothing_changes(self):
+        store = StateStore(self.regmap)
+        feed_clock(store, self.regmap, year=26, month=7, day=15, hour=10, minute=30)
+        assert stamp_events(feed_clock(store, self.regmap, minute=30)) == []
+        assert stamp_events(feed_clock(store, self.regmap, minute=31))[0].value.endswith(
+            "10:31:00+00:00"
+        )
+
+    def test_an_impossible_date_gives_no_value(self):
+        store = StateStore(self.regmap)
+        feed_clock(store, self.regmap, year=26, month=7, day=31, hour=10, minute=0)
+        events = feed_clock(store, self.regmap, day=32)
+        assert stamp_events(events)[-1].value is None
+
+    def test_the_moment_is_part_of_the_snapshot(self):
+        store = StateStore(self.regmap)
+        feed_clock(store, self.regmap, year=26, month=7, day=15, hour=10, minute=30)
+        assert {e.key: e.value for e in store.snapshot()}[
+            "boiler_time"
+        ] == "2026-07-15T10:30:00+00:00"
