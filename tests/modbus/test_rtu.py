@@ -122,3 +122,32 @@ def test_check_write_response():
     rtu.check_write_response(frame, 0x0A, 300, 1)
     with pytest.raises(rtu.FrameError):
         rtu.check_write_response(frame, 0x0A, 301, 1)
+
+
+@pytest.mark.parametrize(
+    ("frame", "kind"),
+    [
+        (rtu.build_read_response(0x0A, [100]), FrameKind.READ_RESPONSE),
+        (rtu.build_read_response(0x0A, [1, 2, 3]), FrameKind.READ_RESPONSE),
+        (rtu.build_write_response(0x0A, 300, 1), FrameKind.WRITE_RESPONSE),
+        (rtu.build_exception_response(0x0A, 3, 6), FrameKind.EXCEPTION),
+        (rtu.build_read_request(0x0A, 600, 2), FrameKind.READ_REQUEST),
+        (rtu.build_write_request(0x0A, 300, [1]), FrameKind.WRITE_REQUEST),
+    ],
+)
+def test_splitter_is_not_fooled_by_the_padding_byte(frame, kind):
+    # A 7-byte frame plus the padding byte is also a CRC-valid 8-byte frame, because
+    # crc16(msg + crc_lo) always equals crc_hi.
+    frames = FrameSplitter().feed(frame + b"\x00")
+    assert [f.kind for f in frames] == [kind]
+    assert frames[0].raw == frame
+
+
+def test_padded_frames_back_to_back():
+    stream = (
+        rtu.build_read_response(0x0A, [100])
+        + b"\x00"
+        + rtu.build_read_response(0x0A, [200])
+        + b"\x00"
+    )
+    assert [f.values for f in FrameSplitter().feed(stream)] == [(100,), (200,)]

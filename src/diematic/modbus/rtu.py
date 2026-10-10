@@ -174,6 +174,10 @@ class FrameSplitter:
         self._buf = bytearray()
         self.discarded_bytes = 0
 
+    @property
+    def pending_bytes(self) -> int:
+        return len(self._buf)
+
     def reset(self) -> None:
         self.discarded_bytes += len(self._buf)
         self._buf.clear()
@@ -188,19 +192,19 @@ class FrameSplitter:
                 break
             buf = bytes(self._buf)
             options, _ = _candidates(buf)
-            matched = False
-            waiting = False
-            for kind, length in options:
-                if length > len(buf):
-                    waiting = True
-                    continue
-                raw = buf[:length]
-                if _crc_ok(raw):
-                    frames.append(_decode(kind, raw))
-                    del self._buf[:length]
-                    matched = True
-                    break
-            if matched:
+            waiting = any(length > len(buf) for _, length in options)
+            valid = [
+                (length, kind)
+                for kind, length in options
+                if length <= len(buf) and _crc_ok(buf[:length])
+            ]
+            # A frame followed by the bus padding byte also passes the CRC check as a frame one
+            # byte longer (crc16 over the CRC's first byte always equals its second byte), so the
+            # shortest valid reading is the real one.
+            if valid:
+                length, kind = min(valid, key=lambda candidate: candidate[0])
+                frames.append(_decode(kind, buf[:length]))
+                del self._buf[:length]
                 continue
             if waiting and len(buf) < self.MAX_BUFFER:
                 break
