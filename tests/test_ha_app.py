@@ -78,3 +78,9 @@ def test_built_in_maps_offered_in_the_docs_exist():
     for name in ("diematic_isystem", "diematic3_legacy"):
         assert load_map(name)
     assert CONFIG["options"]["map"] == "diematic_isystem"
+
+
+def test_the_app_leaves_the_time_zone_to_the_tz_the_supervisor_passes():
+    assert "DIEMATIC_TIMEZONE" not in RUN_SH
+    assert "bashio::supervisor.timezone" not in RUN_SH
+    assert "TZ" in RUN_SH

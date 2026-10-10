@@ -12,7 +12,8 @@ export DIEMATIC_FAST_INTERVAL="$(bashio::config 'fast_interval')"
 export DIEMATIC_SLOW_INTERVAL="$(bashio::config 'slow_interval')"
 export DIEMATIC_CLOCK_SYNC="$(bashio::config 'clock_sync')"
 export DIEMATIC_LOG_LEVEL="$(bashio::config 'log_level')"
-export DIEMATIC_TIMEZONE="$(bashio::supervisor.timezone)"
+# The Supervisor passes Home Assistant's time zone to the container as TZ, which the bridge
+# uses for the boiler clock when no time zone is configured.
 export MQTT_TOPIC_PREFIX="$(bashio::config 'mqtt_topic_prefix')"
 export MQTT_DISCOVERY_PREFIX="$(bashio::config 'mqtt_discovery_prefix')"
 export MQTT_BOILER_AVAILABILITY="$(bashio::config 'mqtt_boiler_availability')"

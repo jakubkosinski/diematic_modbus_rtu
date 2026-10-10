@@ -57,8 +57,8 @@ as well.
 ### Boiler time
 
 The *Boiler time* sensor combines the boiler's date and time registers into one moment, for
-example `2026-07-15T10:30:00+02:00`. The boiler stores no time zone, so the one from `timezone`
-([configuration](configuration.md)) is applied, including the summer and winter offset. Compare
+example `2026-07-15T10:30:00+02:00`. The boiler stores no time zone, so the configured one is applied (`timezone`, else `TZ`, else the
+machine's; see [configuration](configuration.md)), including the summer and winter offset. Compare
 it with Home Assistant's own time to see whether the boiler clock has drifted, or turn on
 `clock_sync` to have it corrected. It refreshes at the fast poll interval and is unknown while a
 date is incomplete or impossible.

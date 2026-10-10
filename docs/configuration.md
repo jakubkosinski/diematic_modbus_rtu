@@ -28,10 +28,16 @@ value.
 | `slow_interval` | `DIEMATIC_SLOW_INTERVAL` | `300` | Seconds between polls of the `slow` group. |
 | `offline_after` | `DIEMATIC_OFFLINE_AFTER` | `120` | Seconds without a valid answer before the boiler counts as offline (minimum 10). |
 | `clock_sync` | `DIEMATIC_CLOCK_SYNC` | `false` | Set the boiler clock when it drifts. |
-| `timezone` | `DIEMATIC_TIMEZONE` | `UTC` | Time zone the boiler clock is set to (IANA name, e.g. `Europe/Warsaw`). The *Boiler time* sensor and `clock_sync` use it; with the wrong zone the time is shifted. |
+| `timezone` | `DIEMATIC_TIMEZONE` | see below | Time zone the boiler clock is set to (IANA name, e.g. `Europe/Warsaw`). The *Boiler time* sensor and `clock_sync` use it; with the wrong zone the time is shifted. |
 | `heartbeat_file` | `DIEMATIC_HEARTBEAT_FILE` | none | File touched every 10 s for health checks. |
 | `log_level` | `DIEMATIC_LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. |
 | `bus.*` | `DIEMATIC_BUS__*` | see [protocol](protocol.md) | `silence_gap`, `master_phase`, `cycle`, `cycle_guard`, `window`, `idle_open_after`, `response_timeout`. |
+
+**Time zone.** The boiler stores no zone, so the bridge looks for one: `timezone` if set, then the
+`TZ` environment variable (Docker and Home Assistant set it), then the time zone of the machine,
+and only then UTC. The zone in use is logged at start (`boiler clock time zone: ...`). If none is
+found the bridge falls back to UTC and logs a warning, because Home Assistant would show the boiler
+time shifted by your offset from UTC. In a container without `TZ` set `DIEMATIC_TIMEZONE`.
 
 `DIEMATIC_ENABLED_PLUGINS` (comma separated) overrides which plugins run. Without it the
 plugins listed under `plugins:` in the YAML file run, and with neither the MQTT plugin runs.

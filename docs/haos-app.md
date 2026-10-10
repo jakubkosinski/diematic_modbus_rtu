@@ -30,9 +30,10 @@ development of the app therefore means building the image yourself, see below.
 | `mqtt_topic_prefix`, `mqtt_discovery_prefix` | `MQTT_TOPIC_PREFIX`, `MQTT_DISCOVERY_PREFIX` | |
 | `mqtt_boiler_availability` | `MQTT_BOILER_AVAILABILITY` | Off by default. |
 
-The boiler time zone for `clock_sync` is taken from Home Assistant. `diematic_modbus/run.sh`
-does the translation; a test compares its variable names, the options and the translations with
-the real settings, so they cannot drift apart.
+The time zone of the boiler clock (the *Boiler time* sensor and `clock_sync`) is Home Assistant's:
+the Supervisor passes it to the app as `TZ`, and the bridge uses it because the app sets no zone of
+its own. `diematic_modbus/run.sh` does the translation of the options; a test compares its variable
+names, the options and the translations with the real settings, so they cannot drift apart.
 
 ## Custom register maps
 

@@ -14,7 +14,7 @@ gateway:
   fast_interval: 30           # seconds between polls of measurements
   slow_interval: 300          # seconds between polls of settings and programs
   clock_sync: false
-  timezone: Europe/Warsaw     # used by clock_sync
+  timezone: Europe/Warsaw     # zone of the boiler clock; unset: TZ or the machine's zone, else UTC
   log_level: INFO
   # Override the bus timing only if your boiler's rhythm differs from 5 s talking / 5 s listening.
   # bus:
