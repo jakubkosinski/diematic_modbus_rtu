@@ -1,0 +1,52 @@
+configuration:
+  gateway_host:
+    name: Adres konwertera
+    description: Nazwa hosta lub adres IP konwertera RS485-Ethernet podłączonego do kotła.
+  gateway_port:
+    name: Port konwertera
+    description: Port TCP konwertera (surowe ramki RTU, bez nagłówka Modbus TCP).
+  map:
+    name: Mapa rejestrów
+    description: Mapa wbudowana (diematic_isystem lub diematic3_legacy) albo nazwa pliku YAML w katalogu konfiguracji tej aplikacji.
+  language:
+    name: Język
+    description: Język nazw encji oraz wartości wyliczeniowych publikowanych do MQTT.
+  slave_address:
+    name: Adres regulatora
+    description: Adres Modbus regulatora. Puste pole oznacza adres z mapy rejestrów.
+  read_only:
+    name: Tylko odczyt
+    description: Odrzucaj wszystkie zmiany zlecone przez MQTT.
+  trailing_zero:
+    name: Końcowy bajt zerowy
+    description: Dodawaj dodatkowy bajt zerowy po każdej ramce, którego oczekuje magistrala Diematic. Zostaw włączone, jeśli nie masz pewności.
+  fast_interval:
+    name: Odstęp pomiarów
+    description: Liczba sekund między odczytami pomiarów i często zmienianych ustawień.
+  slow_interval:
+    name: Odstęp ustawień
+    description: Liczba sekund między odczytami rzadko zmienianych ustawień i programów tygodniowych.
+  clock_sync:
+    name: Synchronizuj zegar kotła
+    description: Ustaw zegar kotła, gdy odbiega od czasu Home Assistant.
+  log_level:
+    name: Poziom logów
+    description: Szczegółowość logu aplikacji.
+  mqtt_host:
+    name: Host MQTT
+    description: Adres brokera. Puste pole oznacza broker udostępniony przez Home Assistant.
+  mqtt_port:
+    name: Port MQTT
+    description: Port brokera, używany razem z hostem MQTT.
+  mqtt_username:
+    name: Użytkownik MQTT
+    description: Nazwa użytkownika własnego brokera.
+  mqtt_password:
+    name: Hasło MQTT
+    description: Hasło do własnego brokera.
+  mqtt_topic_prefix:
+    name: Prefiks tematów
+    description: Wartości są publikowane pod tym prefiksem, na przykład diematic/outdoor_temp.
+  mqtt_discovery_prefix:
+    name: Prefiks discovery
+    description: Musi odpowiadać prefiksowi discovery skonfigurowanemu w Home Assistant (domyślnie homeassistant).

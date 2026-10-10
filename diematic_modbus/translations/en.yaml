@@ -1,0 +1,52 @@
+configuration:
+  gateway_host:
+    name: Converter address
+    description: Host name or IP address of the RS485-to-Ethernet converter wired to the boiler.
+  gateway_port:
+    name: Converter port
+    description: TCP port of the converter (raw RTU, no Modbus TCP framing).
+  map:
+    name: Register map
+    description: Built-in map (diematic_isystem or diematic3_legacy) or the name of a YAML file in this app's configuration folder.
+  language:
+    name: Language
+    description: Language of entity names and of enum values published to MQTT.
+  slave_address:
+    name: Regulator address
+    description: Modbus address of the regulator. Leave empty to use the one from the register map.
+  read_only:
+    name: Read only
+    description: Refuse every change requested over MQTT.
+  trailing_zero:
+    name: Trailing zero byte
+    description: Append the extra zero byte the Diematic bus expects after each frame. Keep enabled unless you know otherwise.
+  fast_interval:
+    name: Measurement interval
+    description: Seconds between polls of measurements and frequently changed settings.
+  slow_interval:
+    name: Settings interval
+    description: Seconds between polls of rarely changed settings and weekly programs.
+  clock_sync:
+    name: Synchronise boiler clock
+    description: Set the boiler clock when it drifts from Home Assistant's time.
+  log_level:
+    name: Log level
+    description: Verbosity of the app log.
+  mqtt_host:
+    name: MQTT host
+    description: Broker address. Leave empty to use the broker provided by Home Assistant.
+  mqtt_port:
+    name: MQTT port
+    description: Broker port, used together with the MQTT host.
+  mqtt_username:
+    name: MQTT username
+    description: User name for your own broker.
+  mqtt_password:
+    name: MQTT password
+    description: Password for your own broker.
+  mqtt_topic_prefix:
+    name: Topic prefix
+    description: Values are published under this prefix, for example diematic/outdoor_temp.
+  mqtt_discovery_prefix:
+    name: Discovery prefix
+    description: Must match the discovery prefix configured in Home Assistant (homeassistant by default).
