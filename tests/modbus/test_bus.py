@@ -96,6 +96,7 @@ async def test_writes_are_served_before_reads_queued_earlier(rig):
 async def test_requests_across_several_cycles_never_collide(rig):
     for register in (10, 11, 12):
         assert await rig.bus.read_registers(register, 1) == [REGISTERS[register]]
+        await asyncio.sleep(FAST.cycle)
     assert rig.sim.collisions == 0
     assert rig.bus.stats.windows >= 2
 
@@ -190,3 +191,9 @@ async def test_pending_requests_fail_when_the_link_drops(rig):
     await rig.sim.drop_connections()
     with pytest.raises(BusUnavailable):
         await request
+
+
+async def test_requests_awaited_one_by_one_share_a_single_window(rig):
+    for register in (10, 11, 12, 13):
+        assert await rig.bus.read_registers(register, 1) == [REGISTERS[register]]
+    assert rig.bus.stats.windows == 1

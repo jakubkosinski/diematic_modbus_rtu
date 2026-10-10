@@ -57,6 +57,7 @@ class BusTiming:
     idle_open_after: float = 6.0
     response_timeout: float = 2.5
     min_request_time: float = 0.3
+    linger: float = 0.1
     stale_frame_after: float = 0.05
     tick: float = 0.1
 
@@ -99,6 +100,7 @@ class DiematicBus:
         self._seq = itertools.count()
         self.state = BusState.DISCONNECTED
         self.connected = asyncio.Event()
+        self._request_added = asyncio.Event()
         self.stats = BusStats()
         self.last_response: float | None = None
 
@@ -122,6 +124,7 @@ class DiematicBus:
         future: asyncio.Future[list[int] | None] = asyncio.get_running_loop().create_future()
         request = _Request(priority, next(self._seq), frame, is_write, start, count, future)
         heapq.heappush(self._pending, request)
+        self._request_added.set()
         try:
             return await asyncio.wait_for(future, max_wait)
         except TimeoutError:
@@ -194,7 +197,7 @@ class DiematicBus:
     ) -> float | None:
         """When a window opened now would have to end, or None if none should open."""
         timing = self._timing
-        if not any(not request.future.done() for request in self._pending):
+        if not self._has_live_request():
             return None
         silence = now - last_rx
         if silence >= timing.idle_open_after:
@@ -219,7 +222,11 @@ class DiematicBus:
                     return None
                 request = self._pop_request()
                 if request is None:
-                    return None
+                    # a caller awaiting replies one by one submits its next request only after
+                    # we resume, so give it a moment instead of closing the window
+                    if not await self._wait_for_request(min(timing.linger, remaining)):
+                        return None
+                    continue
                 interrupted_at = await self._exchange(
                     request, splitter, min(remaining, timing.response_timeout)
                 )
@@ -227,6 +234,19 @@ class DiematicBus:
                     return interrupted_at
         finally:
             self.state = BusState.LISTENING
+
+    async def _wait_for_request(self, limit: float) -> bool:
+        self._request_added.clear()
+        if self._has_live_request():
+            return True
+        try:
+            await asyncio.wait_for(self._request_added.wait(), limit)
+        except TimeoutError:
+            return False
+        return True
+
+    def _has_live_request(self) -> bool:
+        return any(not request.future.done() for request in self._pending)
 
     def _pop_request(self) -> _Request | None:
         while self._pending:
