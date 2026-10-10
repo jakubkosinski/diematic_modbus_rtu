@@ -22,6 +22,7 @@ _CONFIG_GROUPS = frozenset(
 )
 # Strings arrive as text, so an empty payload means "no value".
 _NUMERIC_TEMPLATE = "{{ value if value else none }}"
+_CONNECTION_NAME = {"en": "Boiler connection", "pl": "Połączenie z kotłem"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,14 +42,20 @@ class DiscoveryBuilder:
             "manufacturer": "De Dietrich",
             "model": regmap.name,
         }
-        self._availability = [
-            {"topic": topics.status, "payload_available": ONLINE, "payload_not_available": OFFLINE},
-            {
-                "topic": topics.boiler_status,
-                "payload_available": ONLINE,
-                "payload_not_available": OFFLINE,
-            },
-        ]
+        bridge = {
+            "topic": topics.status,
+            "payload_available": ONLINE,
+            "payload_not_available": OFFLINE,
+        }
+        boiler = {
+            "topic": topics.boiler_status,
+            "payload_available": ONLINE,
+            "payload_not_available": OFFLINE,
+        }
+        # By default entities keep their last value while the boiler is silent; only the bridge
+        # going away makes them unavailable. The boiler's own state is a separate sensor.
+        self._bridge_only = [bridge]
+        self._availability = [bridge, boiler] if settings.boiler_availability else [bridge]
 
     def build(self) -> list[DiscoveryMessage]:
         messages: list[DiscoveryMessage] = []
@@ -58,7 +65,25 @@ class DiscoveryBuilder:
             messages.append(self._derived(derived))
         for climate in self._regmap.composites:
             messages.append(self._climate(climate))
+        messages.append(self._connection())
         return messages
+
+    def _connection(self) -> DiscoveryMessage:
+        name = _CONNECTION_NAME.get(self._regmap.language, _CONNECTION_NAME["en"])
+        message = self._message(
+            "binary_sensor",
+            "boiler_connection",
+            name,
+            {
+                "state_topic": self._topics.boiler_status,
+                "payload_on": ONLINE,
+                "payload_off": OFFLINE,
+                "device_class": "connectivity",
+            },
+            category="diagnostic",
+        )
+        message.payload["availability"] = self._bridge_only
+        return message
 
     def removals(self) -> list[str]:
         """Topics left over from entities the map no longer has.

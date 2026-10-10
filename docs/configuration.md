@@ -56,6 +56,7 @@ of the normal interval.
 | `keepalive` | `MQTT_KEEPALIVE` | `60` | Seconds. |
 | `qos` | `MQTT_QOS` | `1` | 0, 1 or 2. |
 | `topic_prefix` | `MQTT_TOPIC_PREFIX` | `diematic` | No wildcards, spaces or empty levels. |
+| `boiler_availability` | `MQTT_BOILER_AVAILABILITY` | `false` | Make entities unavailable while the boiler is offline. By default they keep their last value and only the *Boiler connection* sensor shows the outage. |
 | `discovery` | `MQTT_DISCOVERY` | `true` | Publish Home Assistant discovery. |
 | `discovery_prefix` | `MQTT_DISCOVERY_PREFIX` | `homeassistant` | Must match Home Assistant. |
 | `node_id` | `MQTT_NODE_ID` | `diematic` | Identifies the device; letters, digits, `_`, `-`. |

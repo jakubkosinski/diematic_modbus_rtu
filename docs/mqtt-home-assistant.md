@@ -11,7 +11,7 @@ entities appear under one device ("Diematic boiler" by default).
 | Topic | Direction | Payload |
 |---|---|---|
 | `<prefix>/status` | out, retained | `online` / `offline` (last will): the bridge itself. |
-| `<prefix>/boiler_status` | out, retained | `online` / `offline`: whether the boiler answers. |
+| `<prefix>/boiler_status` | out, retained | `online` / `offline`: whether the boiler has answered recently (see `DIEMATIC_OFFLINE_AFTER`). |
 | `<prefix>/<key>` | out, retained | The value as text. No value (for example an absent room sensor) is an empty payload. |
 | `<prefix>/<key>/set` | in | A new value for a writable register. |
 | `<prefix>/<register>/<flag>` | out, retained | `ON` / `OFF` for each flag of a flags register. |
@@ -39,6 +39,7 @@ unknown registers and unknown flags are ignored with a warning.
 | Flag in a read-only register | `binary_sensor` |
 | Weekly program | `text`, validated by a pattern, enabled by default |
 | Derived value | `sensor` (energy totals, burner counters) |
+| Boiler link | `binary_sensor` *Boiler connection* (diagnostic) |
 | Heating circuit | `climate` with night/day setpoints, `auto`/`heat`/`off` and `night`/`day` presets |
 
 Helper registers (split counters, the unit-less solar values, stop periods) are created disabled;
@@ -46,8 +47,11 @@ enable them in Home Assistant when needed. Settings of the installation and serv
 the *configuration* entity category, service measurements the *diagnostic* one. Circuits B and C
 are disabled by default because many installations do not have them.
 
-Every entity is unavailable unless both `<prefix>/status` and `<prefix>/boiler_status` are
-`online`.
+Entities keep their last value while the boiler does not answer: they only become unavailable
+when the bridge itself is gone (`<prefix>/status` is `offline`). The state of the boiler is shown
+by the diagnostic **Boiler connection** binary sensor, which follows `<prefix>/boiler_status`.
+Set `MQTT_BOILER_AVAILABILITY=true` to make every entity unavailable while the boiler is offline
+as well.
 
 ### The thermostat
 

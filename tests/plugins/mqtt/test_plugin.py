@@ -397,3 +397,15 @@ async def test_entities_of_left_out_registers_are_retired_on_connect():
 
 async def test_nothing_is_retired_when_every_register_is_kept(rig):
     assert not [t for t, payload, _ in rig.client.published if payload is None]
+
+
+async def test_a_silent_boiler_does_not_make_the_entities_unavailable(rig):
+    rig.events.publish(AvailabilityChanged(True))
+    await rig.until(lambda: rig.client.last(f"{P}/boiler_status") == "online")
+    rig.events.publish(ValueChanged("circuit_a_day_temp", 21.5, (215,)))
+    await rig.until(lambda: rig.client.last(f"{P}/circuit_a_day_temp") == "21.5")
+    rig.events.publish(AvailabilityChanged(False))
+    await rig.until(lambda: rig.client.last(f"{P}/boiler_status") == "offline")
+    assert rig.client.last(f"{P}/circuit_a_day_temp") == "21.5"
+    assert rig.client.last(f"{P}/status") == "online"
+    assert not [t for t, payload, _ in rig.client.published if payload is None]

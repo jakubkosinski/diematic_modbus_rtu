@@ -30,6 +30,7 @@ plugins:
     username: diematic
     # Prefer the MQTT_PASSWORD environment variable over writing the password in this file.
     topic_prefix: diematic
+    boiler_availability: false  # true: entities become unavailable while the boiler is silent
     discovery: true
     discovery_prefix: homeassistant
     qos: 1

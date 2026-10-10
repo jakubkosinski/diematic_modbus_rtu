@@ -27,6 +27,7 @@ class TestSettings:
         assert (settings.host, settings.port, settings.qos) == ("localhost", 1883, 1)
         assert settings.discovery is True and settings.discovery_prefix == "homeassistant"
         assert settings.topic_prefix == "diematic" and settings.password is None
+        assert settings.boiler_availability is False
 
     def test_environment_overrides_values_from_the_config_file(self, monkeypatch):
         monkeypatch.setenv("MQTT_HOST", "from-env")

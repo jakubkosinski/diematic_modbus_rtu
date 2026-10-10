@@ -45,16 +45,45 @@ def test_every_register_is_exposed_by_some_entity():
             assert f"diematic_{register.key}" in exposed, register.key
 
 
-def test_every_entity_carries_the_device_and_both_availability_topics():
+def test_entities_only_depend_on_the_bridge_so_they_keep_their_last_value():
     _, messages = build()
     for message in messages:
         payload = message.payload
         assert payload["device"]["identifiers"] == ["diematic"]
+        assert [a["topic"] for a in payload["availability"]] == ["diematic/status"]
+
+
+def test_entities_can_be_made_to_follow_the_boiler_as_well():
+    _, messages = build(boiler_availability=True)
+    for message in messages:
+        payload = message.payload
+        if message.topic.endswith("/boiler_connection/config"):
+            continue
         assert payload["availability_mode"] == "all"
         assert [a["topic"] for a in payload["availability"]] == [
             "diematic/status",
             "diematic/boiler_status",
         ]
+
+
+@pytest.mark.parametrize("boiler_availability", [False, True])
+def test_the_boiler_connection_sensor_stays_available_whatever_the_boiler_does(
+    boiler_availability,
+):
+    _, messages = build(boiler_availability=boiler_availability)
+    sensor = entity(messages, "binary_sensor", "boiler_connection")
+    assert sensor["state_topic"] == "diematic/boiler_status"
+    assert (sensor["payload_on"], sensor["payload_off"]) == ("online", "offline")
+    assert sensor["device_class"] == "connectivity"
+    assert sensor["entity_category"] == "diagnostic"
+    assert [a["topic"] for a in sensor["availability"]] == ["diematic/status"]
+
+
+def test_the_boiler_connection_sensor_is_named_in_the_map_language():
+    _, english = build(language="en")
+    _, polish = build(language="pl")
+    assert entity(english, "binary_sensor", "boiler_connection")["name"] == "Boiler connection"
+    assert entity(polish, "binary_sensor", "boiler_connection")["name"] == "Połączenie z kotłem"
 
 
 def test_measure_becomes_a_sensor_with_units_and_classes():

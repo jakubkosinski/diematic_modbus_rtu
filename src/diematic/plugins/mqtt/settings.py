@@ -32,6 +32,7 @@ class MqttSettings(LayeredSettings):
     keepalive: int = Field(default=60, ge=5, le=3600)
     qos: Literal[0, 1, 2] = 1
     topic_prefix: str = "diematic"
+    boiler_availability: bool = False
     discovery: bool = True
     discovery_prefix: str = "homeassistant"
     node_id: str = Field(default="diematic", pattern=r"^[A-Za-z0-9_-]+$")
