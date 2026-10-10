@@ -73,6 +73,7 @@ class RegisterDef(_Strict):
     state_class: str | None = None
     icon: str | None = None
     group: str | None = None
+    enabled_by_default: bool = True
 
     @model_validator(mode="after")
     def _check(self) -> RegisterDef:
@@ -142,6 +143,7 @@ class DerivedDef(_Strict):
     device_class: str | None = None
     state_class: str | None = None
     group: str | None = None
+    enabled_by_default: bool = True
 
 
 class TimeProgramDef(_Strict):
@@ -157,6 +159,7 @@ class MapFile(_Strict):
     system: str = Field(pattern=KEY_PATTERN)
     name: str
     slave_address: int = Field(default=10, ge=1, le=247)
+    templates: dict[str, Any] = {}
     registers: list[RegisterDef] = []
     time_programs: list[TimeProgramDef] = []
     derived: list[DerivedDef] = []

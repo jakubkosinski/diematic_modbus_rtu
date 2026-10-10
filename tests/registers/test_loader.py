@@ -187,3 +187,21 @@ def test_load_map_rejects_broken_yaml(tmp_path):
     path.write_text("system: [unclosed", encoding="utf-8")
     with pytest.raises(MapError, match="invalid YAML"):
         load_map(path)
+
+
+def test_yaml_templates_can_be_merged_into_registers():
+    parsed = parse_map(
+        __import__("yaml").safe_load(
+            """
+system: tpl
+name: Template
+templates:
+  temp_measure: &temp_measure {type: temp, kind: measure, unit: "°C", device_class: temperature}
+registers:
+  - {<<: *temp_measure, key: a, address: 1, name: A}
+  - {<<: *temp_measure, key: b, address: 2, name: B, enabled_by_default: false}
+"""
+        )
+    )
+    assert parsed.get("a").unit == "°C" and parsed.get("a").enabled_by_default
+    assert not parsed.get("b").enabled_by_default
