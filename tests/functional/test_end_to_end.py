@@ -57,6 +57,11 @@ registers:
       day: {bit: 2, name: Day, writable: true}
       auto: {bit: 3, name: Auto, writable: true}
       dhw: {bit: 4, name: DHW, writable: true}
+  - key: ghost
+    address: 24
+    type: uint
+    kind: measure
+    name: Register this boiler does not have
 time_programs:
   - {key: program, name: Program, address: 30}
 composites:
@@ -72,7 +77,13 @@ composites:
 """
 
 FAST_BUS = BusSettings(
-    silence_gap=0.1, master_phase=0.25, cycle=0.9, cycle_guard=0.05, window=0.5, idle_open_after=0.7
+    silence_gap=0.1,
+    master_phase=0.25,
+    cycle=0.9,
+    cycle_guard=0.05,
+    window=0.5,
+    idle_open_after=0.7,
+    response_timeout=0.3,
 )
 
 
@@ -107,6 +118,7 @@ class HomeAssistant:
     def __init__(self, port):
         self.port = port
         self.seen: dict[str, str] = {}
+        self.history: dict[str, list[str]] = {}
         self.client = None
         self._task = None
         self._ready = asyncio.Event()
@@ -122,7 +134,9 @@ class HomeAssistant:
             await client.subscribe("homeassistant/#", qos=1)
             self._ready.set()
             async for message in client.messages:
-                self.seen[str(message.topic)] = bytes(message.payload).decode()
+                payload = bytes(message.payload).decode()
+                self.seen[str(message.topic)] = payload
+                self.history.setdefault(str(message.topic), []).append(payload)
 
     async def stop(self):
         self._task.cancel()
@@ -259,3 +273,19 @@ async def test_bridge_keeps_polling_and_reconnects_when_the_broker_restarts(stac
     stack.home = HomeAssistant(stack.broker.port)
     await stack.home.start()
     assert await stack.home.wait("diematic/room_temp", "23.1", limit=25) == "23.1"
+
+
+async def test_registers_the_boiler_ignores_neither_flap_it_nor_break_the_others(stack, caplog):
+    caplog.set_level("INFO")
+    home = stack.home
+    stack.simulator.silent_addresses = {24}
+    await home.wait("diematic/boiler_status", "online")
+    await home.wait("diematic/room_temp", "20.5")
+    await asyncio.sleep(9)
+    statuses = home.history["diematic/boiler_status"]
+    assert "offline" not in statuses[statuses.index("online") :]
+    assert await home.wait("diematic/day_temp", "17.5") == "17.5"
+    assert "diematic/ghost" not in home.seen
+    skipped = [r.message for r in caplog.records if "does not answer 1 registers" in r.message]
+    assert skipped and "DIEMATIC_DISABLED_REGISTERS=ghost" in skipped[0]
+    assert stack.simulator.collisions == 0

@@ -32,6 +32,7 @@ class BoilerSimulator:
     reject_writes: bool = False
     drop_responses: int = 0
     delay_next: float = 0.0
+    silent_addresses: set[int] = field(default_factory=set)
     trailing_zero: bool = True
     collisions: int = 0
     handled: list[Frame] = field(default_factory=list)
@@ -135,6 +136,8 @@ class BoilerSimulator:
             return None
         self.handled.append(frame)
         if frame.kind is FrameKind.READ_REQUEST:
+            if self.silent_addresses.intersection(range(frame.start, frame.start + frame.count)):
+                return None
             return self._read_registers(frame)
         if frame.kind is FrameKind.WRITE_REQUEST:
             return self._write_registers(frame)
