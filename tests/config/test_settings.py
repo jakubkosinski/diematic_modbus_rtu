@@ -210,3 +210,14 @@ def test_malformed_register_names_are_rejected(tmp_path, names):
         load_settings(
             write(tmp_path, f"gateway: {{host: h, port: 1, disabled_registers: ['{names}']}}")
         )
+
+
+def test_the_time_zone_is_not_defaulted_here_so_the_environment_can_supply_it(tmp_path):
+    gateway = load_settings(write(tmp_path, "gateway: {host: h, port: 1}")).gateway
+    assert gateway.timezone is None
+
+
+def test_a_blank_time_zone_variable_keeps_the_value_from_the_file(tmp_path, monkeypatch):
+    path = write(tmp_path, "gateway: {host: h, port: 1, timezone: Europe/Warsaw}")
+    monkeypatch.setenv("DIEMATIC_TIMEZONE", "")
+    assert load_settings(path).gateway.timezone == "Europe/Warsaw"

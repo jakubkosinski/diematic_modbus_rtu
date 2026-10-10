@@ -94,7 +94,7 @@ class GatewaySettings(LayeredSettings):
     slow_interval: float = Field(default=300.0, ge=1)
     offline_after: float = Field(default=120.0, ge=10)
     clock_sync: bool = False
-    timezone: str = "UTC"
+    timezone: str | None = None
     heartbeat_file: Path | None = None
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     bus: BusSettings = Field(default_factory=BusSettings)
@@ -118,7 +118,9 @@ class GatewaySettings(LayeredSettings):
 
     @field_validator("timezone")
     @classmethod
-    def _known_timezone(cls, value: str) -> str:
+    def _known_timezone(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         try:
             ZoneInfo(value)
         except (ZoneInfoNotFoundError, ValueError) as exc:

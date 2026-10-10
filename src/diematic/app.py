@@ -6,9 +6,9 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 from diematic.config.settings import AppSettings
+from diematic.config.timezone import ResolvedTimezone, resolve_timezone
 from diematic.core.clock_sync import ClockSync
 from diematic.core.events import EventBus
 from diematic.core.heartbeat import run_heartbeat
@@ -36,6 +36,7 @@ class Runtime:
     plugins: dict[str, Plugin]
     clock_sync: ClockSync | None
     heartbeat_file: Path | None
+    timezone: ResolvedTimezone
 
 
 def build_runtime(settings: AppSettings, discover: EntryPoints = installed_plugins) -> Runtime:
@@ -50,7 +51,8 @@ def build_runtime(settings: AppSettings, discover: EntryPoints = installed_plugi
         gateway.trailing_zero,
     )
     events = EventBus()
-    state = StateStore(regmap, ZoneInfo(gateway.timezone))
+    timezone = resolve_timezone(gateway.timezone)
+    state = StateStore(regmap, timezone.zone)
     poller = Poller(
         bus,
         regmap,
@@ -73,11 +75,20 @@ def build_runtime(settings: AppSettings, discover: EntryPoints = installed_plugi
     clock_sync = None
     if gateway.clock_sync:
         if ClockSync.supported(regmap):
-            clock_sync = ClockSync(bus, regmap, state, ZoneInfo(gateway.timezone))
+            clock_sync = ClockSync(bus, regmap, state, timezone.zone)
         else:
             logger.warning("clock sync is enabled but map %r has no clock registers", regmap.system)
     return Runtime(
-        regmap, bus, state, events, poller, writer, plugins, clock_sync, gateway.heartbeat_file
+        regmap,
+        bus,
+        state,
+        events,
+        poller,
+        writer,
+        plugins,
+        clock_sync,
+        gateway.heartbeat_file,
+        timezone,
     )
 
 
@@ -95,6 +106,15 @@ async def run_application(
         gateway.read_only,
         ", ".join(runtime.plugins) or "none",
     )
+    zone = runtime.timezone
+    if zone.is_fallback:
+        logger.warning(
+            "no time zone configured or found, using UTC for the boiler clock; the Boiler time "
+            "sensor and clock sync are only right if the boiler is set to UTC. Set "
+            "DIEMATIC_TIMEZONE (for example Europe/Warsaw)."
+        )
+    else:
+        logger.info("boiler clock time zone: %s (from %s)", zone.name, zone.source)
     supervisor = Supervisor()
     supervisor.start("bus", runtime.bus.run)
 

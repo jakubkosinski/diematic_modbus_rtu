@@ -240,10 +240,87 @@ def test_the_retry_interval_never_exceeds_the_regular_one(map_file):
     assert default.poller._intervals.retry == 10
 
 
-def test_the_state_store_uses_the_configured_time_zone(map_file):
+@pytest.fixture
+def bare_machine(monkeypatch, tmp_path):
+    """No TZ variable and no system zone, so only the configuration can decide."""
+    monkeypatch.delenv("TZ", raising=False)
+    monkeypatch.setattr("diematic.config.timezone.LOCALTIME", tmp_path / "none")
+    monkeypatch.setattr("diematic.config.timezone.TIMEZONE_FILE", tmp_path / "none")
+
+
+def test_the_state_store_uses_the_configured_time_zone(map_file, bare_machine):
     runtime = build_runtime(
         settings_for(1, map_file, plugins=(), timezone="Europe/Warsaw"), discover()
     )
     assert str(runtime.state._tz) == "Europe/Warsaw"
-    default = build_runtime(settings_for(1, map_file, plugins=()), discover())
-    assert str(default.state._tz) == "UTC"
+    assert runtime.timezone.source == "configuration"
+
+
+def test_without_a_configured_zone_the_tz_variable_decides(map_file, bare_machine, monkeypatch):
+    monkeypatch.setenv("TZ", "Europe/Warsaw")
+    runtime = build_runtime(settings_for(1, map_file, plugins=()), discover())
+    assert str(runtime.state._tz) == "Europe/Warsaw"
+    assert runtime.timezone.source == "the TZ environment variable"
+
+
+def test_a_configured_zone_beats_the_tz_variable(map_file, bare_machine, monkeypatch):
+    monkeypatch.setenv("TZ", "Asia/Tokyo")
+    runtime = build_runtime(
+        settings_for(1, map_file, plugins=(), timezone="Europe/Warsaw"), discover()
+    )
+    assert str(runtime.state._tz) == "Europe/Warsaw"
+
+
+def test_the_utc_fallback_is_flagged(map_file, bare_machine):
+    runtime = build_runtime(settings_for(1, map_file, plugins=()), discover())
+    assert runtime.timezone.is_fallback and str(runtime.state._tz) == "UTC"
+
+
+def test_the_clock_sync_uses_the_same_zone_as_the_boiler_time(map_file, bare_machine, monkeypatch):
+    monkeypatch.setenv("TZ", "Europe/Warsaw")
+    settings = settings_for(1, map_file, plugins=(), clock_sync=True, map="diematic_isystem")
+    runtime = build_runtime(settings, discover())
+    assert str(runtime.clock_sync._tz) == "Europe/Warsaw"
+
+
+def test_the_boiler_time_gets_the_offset_of_the_zone_found_in_the_environment(
+    map_file, bare_machine, monkeypatch
+):
+    monkeypatch.setenv("TZ", "Europe/Warsaw")
+    runtime = build_runtime(
+        settings_for(1, map_file, plugins=(), map="diematic_isystem"), discover()
+    )
+    for key, word in [
+        ("clock_year", 26),
+        ("clock_month", 10),
+        ("clock_day", 10),
+        ("clock_hour", 23),
+        ("clock_minute", 26),
+    ]:
+        runtime.state.ingest(runtime.regmap.get(key), [word])
+    assert runtime.state.value("boiler_time") == "2026-10-10T23:26:00+02:00"
+
+
+async def test_the_zone_in_use_is_reported_at_start(simulator, map_file, bare_machine, caplog):
+    caplog.set_level("INFO")
+    _, port = simulator
+    app = Running(settings_for(port, map_file, plugins=(), timezone="Europe/Warsaw"), discover())
+    try:
+        await wait_until(lambda: "boiler clock time zone" in caplog.text)
+    finally:
+        await app.shutdown()
+    assert "boiler clock time zone: Europe/Warsaw (from configuration)" in caplog.text
+
+
+async def test_falling_back_to_utc_is_a_warning_that_says_what_to_set(
+    simulator, map_file, bare_machine, caplog
+):
+    caplog.set_level("INFO")
+    _, port = simulator
+    app = Running(settings_for(port, map_file, plugins=()), discover())
+    try:
+        await wait_until(lambda: "using UTC" in caplog.text)
+    finally:
+        await app.shutdown()
+    warning = next(r for r in caplog.records if "using UTC" in r.message)
+    assert warning.levelname == "WARNING" and "DIEMATIC_TIMEZONE" in warning.message
