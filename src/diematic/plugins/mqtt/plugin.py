@@ -118,11 +118,9 @@ class MqttPlugin(Plugin):
         self._regmap = context.regmap
         self._climates = {c.key: c for c in self._regmap.composites}
         self._mode_climates = {c.mode_register: c for c in self._regmap.composites}
-        self._discovery: list[DiscoveryMessage] = (
-            DiscoveryBuilder(self._regmap, self.settings, self._topics).build()
-            if self.settings.discovery
-            else []
-        )
+        builder = DiscoveryBuilder(self._regmap, self.settings, self._topics)
+        self._discovery: list[DiscoveryMessage] = builder.build() if self.settings.discovery else []
+        self._removals = builder.removals()
         self._subscription = context.events.subscribe(ValueChanged, AvailabilityChanged, SetResult)
         self._birth_topic = f"{self.settings.discovery_prefix}/status"
 
@@ -148,11 +146,13 @@ class MqttPlugin(Plugin):
             raise exc_group.exceptions[0] from None
 
     async def _announce(self, client: MqttClient) -> None:
-        """Publish discovery, availability and the current value of everything."""
+        """Publish discovery, retire left-out entities, then availability and current values."""
         for message in self._discovery:
             await client.publish(
                 message.topic, json.dumps(message.payload), qos=self.settings.qos, retain=True
             )
+        for topic in self._removals:
+            await client.publish(topic, None, qos=self.settings.qos, retain=True)
         await self._publish_availability(client, self.context.state.online)
         for event in self.context.state.snapshot():
             await self._publish_value(client, event)

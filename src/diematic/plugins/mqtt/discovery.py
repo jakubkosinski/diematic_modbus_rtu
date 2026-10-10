@@ -60,6 +60,40 @@ class DiscoveryBuilder:
             messages.append(self._climate(climate))
         return messages
 
+    def removals(self) -> list[str]:
+        """Topics left over from entities the map no longer has.
+
+        Publishing an empty retained message to each deletes the entity from Home Assistant, or
+        the value it last published, so nothing lingers as 'unknown' after a register is left out.
+        """
+        original = self._regmap.unfiltered
+        if original is None:
+            return []
+        topics = self._topics
+        kept = {message.topic for message in self.build()}
+        stale = [
+            message.topic
+            for message in DiscoveryBuilder(original, self._settings, topics).build()
+            if message.topic not in kept
+        ]
+        present = {r.key for r in self._regmap.registers} | {d.key for d in self._regmap.derived}
+        for register in original.registers:
+            if register.key in present:
+                continue
+            if register.type == "bits":
+                stale += [topics.flag_state(register.key, flag) for flag in register.bits or {}]
+            else:
+                stale.append(topics.state(register.key))
+        stale += [topics.state(d.key) for d in original.derived if d.key not in present]
+        thermostats = {c.key for c in self._regmap.composites}
+        for climate in original.composites:
+            if climate.key not in thermostats:
+                stale += [
+                    topics.climate_mode_state(climate.key),
+                    topics.climate_preset_state(climate.key),
+                ]
+        return stale
+
     def _message(
         self,
         component: str,

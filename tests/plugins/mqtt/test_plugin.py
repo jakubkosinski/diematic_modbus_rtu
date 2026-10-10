@@ -65,11 +65,11 @@ class FakeClient:
 
 
 class Rig:
-    def __init__(self, **config):
+    def __init__(self, regmap=REGMAP, **config):
         self.client = FakeClient()
         self.events = EventBus()
-        self.state = StateStore(REGMAP)
-        context = PluginContext(REGMAP, self.state, self.events, "en", config)
+        self.state = StateStore(regmap)
+        context = PluginContext(regmap, self.state, self.events, "en", config)
         self.plugin = MqttPlugin(context, self._factory)
         self.requests = self.events.subscribe(SetRequest)
         self.task = None
@@ -379,3 +379,21 @@ async def test_the_password_never_reaches_the_logs(caplog):
     assert "s3cret-password-value" not in caplog.text
     assert "s3cret-password-value" not in repr(rig.plugin.settings)
     assert all("s3cret-password-value" not in str(p) for p in rig.client.published)
+
+
+async def test_entities_of_left_out_registers_are_retired_on_connect():
+    rig = await Rig(REGMAP.excluding(["circuit_c", "solar"])).start()
+    try:
+        published = rig.client.published
+        retired = {t: (payload, retained) for t, payload, retained in published if payload is None}
+        assert retired["homeassistant/climate/diematic/circuit_c/config"] == (None, True)
+        assert retired["diematic/circuit_c_day_temp"] == (None, True)
+        announced = {t for t, payload, _ in published if payload is not None}
+        assert "homeassistant/climate/diematic/circuit_c/config" not in announced
+        assert "homeassistant/climate/diematic/circuit_a/config" in announced
+    finally:
+        await rig.stop()
+
+
+async def test_nothing_is_retired_when_every_register_is_kept(rig):
+    assert not [t for t, payload, _ in rig.client.published if payload is None]

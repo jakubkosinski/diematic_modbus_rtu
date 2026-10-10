@@ -170,3 +170,50 @@ def test_names_follow_the_map_language():
     _, polish = build(language="pl")
     assert entity(polish, "sensor", "outdoor_temp")["name"] == "Temperatura zewnętrzna"
     assert entity(polish, "climate", "circuit_a")["name"] == "Obieg A"
+
+
+def reduced_builder(names):
+    regmap = load_map("diematic_isystem", "en").excluding(names)
+    config = MqttSettings()
+    return DiscoveryBuilder(regmap, config, Topics(config.topic_prefix))
+
+
+def test_nothing_is_retired_when_nothing_was_left_out():
+    regmap = load_map("diematic_isystem", "en")
+    builder = DiscoveryBuilder(regmap, MqttSettings(), Topics("diematic"))
+    assert builder.removals() == []
+
+
+def test_left_out_entities_are_not_announced():
+    announced = by_topic(reduced_builder(["circuit_c", "solar"]).build())
+    assert "homeassistant/climate/diematic/circuit_c/config" not in announced
+    assert "homeassistant/number/diematic/circuit_c_day_temp/config" not in announced
+    assert "homeassistant/sensor/diematic/solar_collector_temp/config" not in announced
+    assert "homeassistant/climate/diematic/circuit_a/config" in announced
+
+
+def test_removals_cover_configs_states_flags_and_thermostat_topics_of_what_was_left_out():
+    removals = set(reduced_builder(["circuit_c", "solar"]).removals())
+    assert "homeassistant/climate/diematic/circuit_c/config" in removals
+    assert "homeassistant/number/diematic/circuit_c_day_temp/config" in removals
+    assert "homeassistant/switch/diematic/circuit_c_forcing_auto/config" in removals
+    assert "homeassistant/text/diematic/circuit_c_program_monday/config" in removals
+    assert "diematic/circuit_c_day_temp" in removals
+    assert "diematic/circuit_c_forcing/auto" in removals
+    assert "diematic/climate/circuit_c/mode" in removals
+    assert "diematic/climate/circuit_c/preset" in removals
+    assert "diematic/solar_collector_temp" in removals
+
+
+def test_removals_never_touch_what_is_still_announced():
+    builder = reduced_builder(["circuit_c", "solar"])
+    removals = set(builder.removals())
+    assert not removals & set(by_topic(builder.build()))
+    assert "diematic/circuit_a_day_temp" not in removals
+    assert "diematic/climate/circuit_a/mode" not in removals
+
+
+def test_derived_sensors_that_lost_their_registers_are_retired():
+    removals = set(reduced_builder(["service"]).removals())
+    assert "homeassistant/sensor/diematic/heating_electrical_energy/config" in removals
+    assert "diematic/burner_hours" in removals
