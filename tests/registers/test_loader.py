@@ -205,3 +205,15 @@ registers:
     )
     assert parsed.get("a").unit == "°C" and parsed.get("a").enabled_by_default
     assert not parsed.get("b").enabled_by_default
+
+
+def test_block_limits_default_and_override():
+    assert (parse_map(RAW).max_block, parse_map(RAW).max_gap) == (40, 0)
+    custom = parse_map(raw_with(max_block=64, max_gap=8))
+    assert (custom.max_block, custom.max_gap) == (64, 8)
+
+
+@pytest.mark.parametrize("limits", [{"max_block": 0}, {"max_block": 126}, {"max_gap": -1}])
+def test_invalid_block_limits_rejected(limits):
+    with pytest.raises(MapError):
+        parse_map(raw_with(**limits))

@@ -30,6 +30,8 @@ class RegisterMap:
     system: str
     name: str
     slave_address: int
+    max_block: int
+    max_gap: int
     language: str
     registers: tuple[RegisterDef, ...]
     derived: tuple[DerivedDef, ...]
@@ -110,6 +112,8 @@ def parse_map(raw: Any, language: str = DEFAULT_LANGUAGE) -> RegisterMap:
         system=data.system,
         name=data.name,
         slave_address=data.slave_address,
+        max_block=data.max_block,
+        max_gap=data.max_gap,
         language=language,
         registers=tuple(sorted(registers, key=lambda r: r.address)),
         derived=tuple(data.derived),

@@ -159,6 +159,8 @@ class MapFile(_Strict):
     system: str = Field(pattern=KEY_PATTERN)
     name: str
     slave_address: int = Field(default=10, ge=1, le=247)
+    max_block: int = Field(default=40, ge=1, le=125)
+    max_gap: int = Field(default=0, ge=0)
     templates: dict[str, Any] = {}
     registers: list[RegisterDef] = []
     time_programs: list[TimeProgramDef] = []
