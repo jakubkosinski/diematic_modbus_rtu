@@ -12,7 +12,7 @@ from diematic.config.settings import AppSettings
 from diematic.core.clock_sync import ClockSync
 from diematic.core.events import EventBus
 from diematic.core.heartbeat import run_heartbeat
-from diematic.core.poller import Poller, PollIntervals
+from diematic.core.poller import DEFAULT_RETRY, Poller, PollIntervals
 from diematic.core.state import StateStore
 from diematic.core.supervisor import Supervisor
 from diematic.core.writer import Writer, WriterOptions
@@ -56,7 +56,11 @@ def build_runtime(settings: AppSettings, discover: EntryPoints = installed_plugi
         regmap,
         state,
         events,
-        PollIntervals(gateway.fast_interval, gateway.slow_interval),
+        PollIntervals(
+            gateway.fast_interval,
+            gateway.slow_interval,
+            retry=min(DEFAULT_RETRY, gateway.fast_interval),
+        ),
         offline_after=gateway.offline_after,
     )
     writer = Writer(bus, regmap, state, events, WriterOptions(read_only=gateway.read_only))

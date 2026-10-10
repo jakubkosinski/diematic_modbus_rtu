@@ -231,3 +231,10 @@ def test_disabling_an_unknown_register_stops_the_start_with_a_clear_error(map_fi
     settings = settings_for(1, map_file, plugins=(), disabled_registers=["no_such_thing"])
     with pytest.raises(MapError, match="no_such_thing"):
         build_runtime(settings, discover())
+
+
+def test_the_retry_interval_never_exceeds_the_regular_one(map_file):
+    quick = build_runtime(settings_for(1, map_file, plugins=(), fast_interval=3), discover())
+    assert quick.poller._intervals.retry == 3
+    default = build_runtime(settings_for(1, map_file, plugins=(), fast_interval=30), discover())
+    assert default.poller._intervals.retry == 10
