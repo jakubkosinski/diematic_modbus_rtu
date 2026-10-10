@@ -176,3 +176,9 @@ def test_every_group_of_the_isystem_map_can_be_named_in_the_exclusion_list():
     groups = {r.group for r in full.registers if r.group}
     assert {"circuit_a", "circuit_b", "circuit_c", "dhw", "aux", "solar", "cascade"} <= groups
     assert not full.excluding(sorted(groups)).registers
+
+
+def test_excluding_a_circuit_also_removes_its_weekly_program():
+    reduced = load_map("diematic_isystem").excluding(["circuit_c"])
+    assert not [r for r in reduced.registers if "circuit_c" in r.key]
+    assert "circuit_a_program_monday" in reduced

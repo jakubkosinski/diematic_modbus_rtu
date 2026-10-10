@@ -82,3 +82,13 @@ def test_diagrams_exist_where_the_conventions_ask_for_them():
 def test_documentation_does_not_reproduce_the_vendor_pdf_by_name_or_path():
     for path in MARKDOWN:
         assert ".pdf" not in path.read_text(encoding="utf-8").lower(), path.name
+
+
+def test_register_map_docs_name_every_group_of_the_isystem_map():
+    from diematic.registers.loader import load_map
+
+    full = load_map("diematic_isystem")
+    groups = {r.group for r in full.registers if r.group}
+    text = (ROOT / "docs" / "register-maps.md").read_text(encoding="utf-8")
+    missing = {group for group in groups if f"`{group}`" not in text}
+    assert not missing, sorted(missing)

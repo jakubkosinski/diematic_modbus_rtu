@@ -153,6 +153,7 @@ class TimeProgramDef(_Strict):
     name: Localized
     address: int = Field(ge=0, le=0xFFFF)
     writable: bool = True
+    group: str | None = None
 
 
 class ClimateDef(_Strict):

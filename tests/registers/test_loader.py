@@ -356,3 +356,18 @@ def test_lookups_work_on_the_reduced_map():
     assert reduced.get("room").key == "room"
     with pytest.raises(KeyError):
         reduced.get("pool")
+
+
+def test_a_time_program_joins_the_group_given_in_the_map_or_forms_its_own():
+    data = {
+        "system": "t",
+        "name": "t",
+        "time_programs": [
+            {"key": "alone", "name": "A", "address": 10},
+            {"key": "member", "name": "B", "address": 40, "group": "circuit_a"},
+        ],
+    }
+    loaded = parse_map(data)
+    assert loaded.get("alone_monday").group == "alone"
+    assert loaded.get("member_monday").group == "circuit_a"
+    assert not [r for r in loaded.excluding(["circuit_a"]).registers if r.key.startswith("member")]

@@ -115,7 +115,7 @@ def _expand_time_programs(data: MapFile, language: str) -> list[RegisterDef]:
                     name=f"{program.name} - {day_name}",
                     poll="slow",
                     writable=program.writable,
-                    group=program.key,
+                    group=program.group or program.key,
                 )
             )
     return expanded

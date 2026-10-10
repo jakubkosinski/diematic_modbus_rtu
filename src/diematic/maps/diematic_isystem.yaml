@@ -591,11 +591,11 @@ registers:
   - {key: clock_year, address: 684, type: uint, kind: parameter, name: {pl: Rok (dwie cyfry), en: Clock year (two digits)}, min: 14, max: 99, step: 1, group: system}
 
 time_programs:
-  - {key: circuit_a_program, name: {pl: Program czasowy P4 obiegu A, en: Circuit A time program P4}, address: 126}
-  - {key: circuit_b_program, name: {pl: Program czasowy P4 obiegu B, en: Circuit B time program P4}, address: 147}
-  - {key: circuit_c_program, name: {pl: Program czasowy P4 obiegu C, en: Circuit C time program P4}, address: 168}
-  - {key: dhw_program, name: {pl: Program czasowy CWU, en: DHW time program}, address: 189}
-  - {key: aux_program, name: {pl: Program czasowy AUX, en: AUX time program}, address: 210}
+  - {key: circuit_a_program, name: {pl: Program czasowy P4 obiegu A, en: Circuit A time program P4}, address: 126, group: circuit_a}
+  - {key: circuit_b_program, name: {pl: Program czasowy P4 obiegu B, en: Circuit B time program P4}, address: 147, group: circuit_b}
+  - {key: circuit_c_program, name: {pl: Program czasowy P4 obiegu C, en: Circuit C time program P4}, address: 168, group: circuit_c}
+  - {key: dhw_program, name: {pl: Program czasowy CWU, en: DHW time program}, address: 189, group: dhw}
+  - {key: aux_program, name: {pl: Program czasowy AUX, en: AUX time program}, address: 210, group: aux}
 
 derived:
   - {key: burner_starts, name: {pl: Liczba startów palnika, en: Burner starts}, terms: [{key: burner_starts_tens, factor: 10}, {key: burner_starts_units}], state_class: total_increasing, group: service}
