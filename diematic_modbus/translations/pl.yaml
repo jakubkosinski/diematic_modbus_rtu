@@ -50,3 +50,9 @@ configuration:
   mqtt_discovery_prefix:
     name: Prefiks discovery
     description: Musi odpowiadać prefiksowi discovery skonfigurowanemu w Home Assistant (domyślnie homeassistant).
+  disabled_registers:
+    name: Pominięte rejestry
+    description: Rejestry lub grupy, których kocioł nie ma, oddzielone przecinkami, na przykład solar,circuit_c,heat_pump. Ich encje są usuwane z Home Assistant.
+  mqtt_boiler_availability:
+    name: Niedostępne, gdy kocioł nie odpowiada
+    description: Oznacza wszystkie encje jako niedostępne, gdy kocioł nie odpowiada. Domyślnie encje zachowują ostatnią wartość, a awarię pokazuje czujnik Połączenie z kotłem.

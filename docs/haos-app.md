@@ -22,11 +22,13 @@ development of the app therefore means building the image yourself, see below.
 | `map` | `DIEMATIC_MAP` | `diematic_isystem`, `diematic3_legacy`, or a `.yaml` file name from the app's configuration folder (`/config`). |
 | `language` | `DIEMATIC_LANGUAGE` | `pl` or `en`. |
 | `slave_address` | `DIEMATIC_SLAVE_ADDRESS` | Optional. |
+| `disabled_registers` | `DIEMATIC_DISABLED_REGISTERS` | Optional, comma separated. See [register maps](register-maps.md#leaving-registers-out). |
 | `read_only`, `trailing_zero`, `clock_sync` | matching `DIEMATIC_*` | |
 | `fast_interval`, `slow_interval` | matching `DIEMATIC_*` | Seconds. |
 | `log_level` | `DIEMATIC_LOG_LEVEL` | |
 | `mqtt_host`, `mqtt_port`, `mqtt_username`, `mqtt_password` | `MQTT_*` | Optional; empty uses the Supervisor's MQTT service. |
 | `mqtt_topic_prefix`, `mqtt_discovery_prefix` | `MQTT_TOPIC_PREFIX`, `MQTT_DISCOVERY_PREFIX` | |
+| `mqtt_boiler_availability` | `MQTT_BOILER_AVAILABILITY` | Off by default. |
 
 The boiler time zone for `clock_sync` is taken from Home Assistant. `diematic_modbus/run.sh`
 does the translation; a test compares its variable names, the options and the translations with

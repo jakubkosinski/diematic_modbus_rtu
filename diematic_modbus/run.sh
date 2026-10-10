@@ -15,9 +15,14 @@ export DIEMATIC_LOG_LEVEL="$(bashio::config 'log_level')"
 export DIEMATIC_TIMEZONE="$(bashio::supervisor.timezone)"
 export MQTT_TOPIC_PREFIX="$(bashio::config 'mqtt_topic_prefix')"
 export MQTT_DISCOVERY_PREFIX="$(bashio::config 'mqtt_discovery_prefix')"
+export MQTT_BOILER_AVAILABILITY="$(bashio::config 'mqtt_boiler_availability')"
 
 if bashio::config.has_value 'slave_address'; then
     export DIEMATIC_SLAVE_ADDRESS="$(bashio::config 'slave_address')"
+fi
+
+if bashio::config.has_value 'disabled_registers'; then
+    export DIEMATIC_DISABLED_REGISTERS="$(bashio::config 'disabled_registers')"
 fi
 
 # A custom register map placed in the app's configuration folder is addressed as /config/<file>.

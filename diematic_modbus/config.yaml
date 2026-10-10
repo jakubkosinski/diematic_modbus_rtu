@@ -27,11 +27,13 @@ options:
   log_level: info
   mqtt_topic_prefix: diematic
   mqtt_discovery_prefix: homeassistant
+  mqtt_boiler_availability: false
 schema:
   gateway_host: str
   gateway_port: port
   map: str
   language: list(pl|en)
+  disabled_registers: str?
   slave_address: int(1,247)?
   read_only: bool
   trailing_zero: bool
@@ -45,3 +47,4 @@ schema:
   mqtt_password: password?
   mqtt_topic_prefix: str
   mqtt_discovery_prefix: str
+  mqtt_boiler_availability: bool

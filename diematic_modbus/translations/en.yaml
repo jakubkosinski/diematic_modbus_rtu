@@ -50,3 +50,9 @@ configuration:
   mqtt_discovery_prefix:
     name: Discovery prefix
     description: Must match the discovery prefix configured in Home Assistant (homeassistant by default).
+  disabled_registers:
+    name: Left-out registers
+    description: Comma separated registers or groups the boiler does not have, for example solar,circuit_c,heat_pump. Their entities are removed from Home Assistant.
+  mqtt_boiler_availability:
+    name: Unavailable when the boiler is offline
+    description: Make every entity unavailable while the boiler does not answer. By default entities keep their last value and the Boiler connection sensor shows the outage.
