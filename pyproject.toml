@@ -40,6 +40,12 @@ packages = ["src/diematic"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-ra"
+filterwarnings = [
+    "ignore:Loading plugins from EntryPoints:DeprecationWarning",
+    "ignore:sys_interval is deprecated:DeprecationWarning",
+    "ignore:'auth' and 'topic-check' are deprecated:DeprecationWarning",
+    "ignore:`BrokerSysPlugin`:DeprecationWarning",
+]
 
 [tool.ruff]
 line-length = 100
