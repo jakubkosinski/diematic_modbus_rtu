@@ -147,9 +147,11 @@ class Poller:
             return
         self.online = online
         self._state.online = online
-        logger.log(
-            logging.INFO if online else logging.WARNING,
-            "boiler is %s",
-            "online" if online else "offline",
-        )
+        if online:
+            logger.info("boiler is online")
+        else:
+            logger.warning(
+                "boiler is offline: no valid answers; check the converter, the slave address "
+                "and the bus timing (master_phase must match the boiler's master phase)"
+            )
         self._events.publish(AvailabilityChanged(online))
