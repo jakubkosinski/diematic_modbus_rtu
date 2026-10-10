@@ -37,6 +37,10 @@ class BusTimeout(BusError):
     """No window opened in time, or the slave did not answer inside it."""
 
 
+class SlaveNotAnswering(BusTimeout):
+    """The request was sent inside a window but nothing valid came back in time."""
+
+
 class BusUnavailable(BusError):
     """The link to the RS485 gateway is down."""
 
@@ -70,6 +74,7 @@ class BusStats:
     requests_failed: int = 0
     timeouts: int = 0
     interrupted: int = 0
+    stale_responses: int = 0
     reconnects: int = 0
 
 
@@ -215,6 +220,8 @@ class DiematicBus:
         self.stats.windows += 1
         self.state = BusState.WINDOW
         splitter.reset()
+        before = (self.stats.requests_ok, self.stats.requests_failed, self.stats.interrupted)
+        opened = time.monotonic()
         try:
             while True:
                 remaining = deadline - time.monotonic()
@@ -234,6 +241,13 @@ class DiematicBus:
                     return interrupted_at
         finally:
             self.state = BusState.LISTENING
+            logger.debug(
+                "window of %.2f s: %d answered, %d failed, %d interrupted",
+                time.monotonic() - opened,
+                self.stats.requests_ok - before[0],
+                self.stats.requests_failed - before[1],
+                self.stats.interrupted - before[2],
+            )
 
     async def _wait_for_request(self, limit: float) -> bool:
         self._request_added.clear()
@@ -269,7 +283,7 @@ class DiematicBus:
             left = end - time.monotonic()
             if left <= 0:
                 self.stats.timeouts += 1
-                self._finish(request, error=BusTimeout("the slave did not answer"))
+                self._finish(request, error=SlaveNotAnswering("the slave did not answer"))
                 return None
             try:
                 chunk = await self._transport.read(left)
@@ -286,12 +300,22 @@ class DiematicBus:
                     self.stats.interrupted += 1
                     heapq.heappush(self._pending, request)
                     return time.monotonic()
+                # An answer from the slave that is not for this request, typically the late
+                # answer to one that already timed out. Keep waiting for the right one.
+                self.stats.stale_responses += 1
+                logger.debug("ignored an unexpected answer %s", frame.raw.hex())
 
     def _answers(self, request: _Request, frame: Frame) -> bool:
         if frame.address != self._slave:
             return False
-        expected = FrameKind.WRITE_RESPONSE if request.is_write else FrameKind.READ_RESPONSE
-        return frame.kind in {expected, FrameKind.EXCEPTION}
+        if frame.kind is FrameKind.EXCEPTION:
+            return True
+        if request.is_write:
+            return frame.kind is FrameKind.WRITE_RESPONSE and (frame.start, frame.count) == (
+                request.start,
+                request.count,
+            )
+        return frame.kind is FrameKind.READ_RESPONSE and frame.count == request.count
 
     def _complete(self, request: _Request, frame: Frame) -> None:
         self.last_response = time.monotonic()

@@ -12,6 +12,7 @@ from diematic.modbus.bus import (
     BusTiming,
     BusUnavailable,
     DiematicBus,
+    SlaveNotAnswering,
 )
 from diematic.modbus.rtu import FrameKind, ModbusException
 from diematic.sim.boiler import BoilerSimulator
@@ -110,15 +111,16 @@ async def test_modbus_exception_is_raised_to_the_caller(rig):
 
 async def test_lost_response_times_out_and_later_requests_still_work(rig):
     rig.sim.drop_responses = 1
-    with pytest.raises(BusTimeout):
+    with pytest.raises(SlaveNotAnswering):
         await rig.bus.read_registers(10, 1)
     assert rig.bus.stats.timeouts == 1
     assert await rig.bus.read_registers(10, 1) == [100]
 
 
 async def test_request_gives_up_when_no_window_opens_in_time(rig):
-    with pytest.raises(BusTimeout):
+    with pytest.raises(BusTimeout) as info:
         await rig.bus.read_registers(10, 1, max_wait=0.01)
+    assert not isinstance(info.value, SlaveNotAnswering)
 
 
 async def test_state_is_listening_between_windows(rig):
@@ -197,3 +199,31 @@ async def test_requests_awaited_one_by_one_share_a_single_window(rig):
     for register in (10, 11, 12, 13):
         assert await rig.bus.read_registers(register, 1) == [REGISTERS[register]]
     assert rig.bus.stats.windows == 1
+
+
+async def test_late_answer_to_an_expired_request_does_not_fail_the_next_one():
+    timing = BusTiming(
+        silence_gap=0.1,
+        master_phase=0.25,
+        cycle=2.3,
+        cycle_guard=0.05,
+        window=1.5,
+        idle_open_after=0.7,
+        response_timeout=0.3,
+        min_request_time=0.05,
+        stale_frame_after=0.02,
+        tick=0.02,
+    )
+    rig = await Rig(make_sim(silent_phase=2.0), timing).start()
+    try:
+        rig.sim.delay_next = 0.4
+        slow, next_one = await asyncio.gather(
+            rig.bus.read_registers(10, 2),
+            rig.bus.read_registers(13, 1),
+            return_exceptions=True,
+        )
+        assert isinstance(slow, SlaveNotAnswering)
+        assert next_one == [8]
+        assert rig.bus.stats.stale_responses == 1
+    finally:
+        await rig.stop()

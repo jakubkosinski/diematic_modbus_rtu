@@ -31,6 +31,7 @@ class BoilerSimulator:
     settle_reads: int = 0
     reject_writes: bool = False
     drop_responses: int = 0
+    delay_next: float = 0.0
     trailing_zero: bool = True
     collisions: int = 0
     handled: list[Frame] = field(default_factory=list)
@@ -123,6 +124,9 @@ class BoilerSimulator:
                 if self.drop_responses > 0:
                     self.drop_responses -= 1
                     continue
+                delay, self.delay_next = self.delay_next, 0.0
+                if delay:
+                    await asyncio.sleep(delay)
                 writer.write(response + (b"\x00" if self.trailing_zero else b""))
                 await writer.drain()
 
