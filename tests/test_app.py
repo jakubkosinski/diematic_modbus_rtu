@@ -218,3 +218,16 @@ def test_clock_sync_is_only_built_when_enabled_and_supported(map_file):
     assert build_runtime(unsupported, discover()).clock_sync is None
     supported = settings_for(1, map_file, plugins=(), clock_sync=True, map="diematic_isystem")
     assert build_runtime(supported, discover()).clock_sync is not None
+
+
+def test_disabled_registers_are_left_out_of_the_runtime(map_file):
+    settings = settings_for(1, map_file, plugins=(), disabled_registers=["outdoor_temp"])
+    runtime = build_runtime(settings, discover())
+    assert "outdoor_temp" not in runtime.regmap and "setpoint" in runtime.regmap
+    assert runtime.regmap.unfiltered is not None
+
+
+def test_disabling_an_unknown_register_stops_the_start_with_a_clear_error(map_file):
+    settings = settings_for(1, map_file, plugins=(), disabled_registers=["no_such_thing"])
+    with pytest.raises(MapError, match="no_such_thing"):
+        build_runtime(settings, discover())

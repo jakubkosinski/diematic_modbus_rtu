@@ -6,6 +6,8 @@ gateway:
   port: 20108
   map: diematic_isystem       # diematic_isystem, diematic3_legacy or a path to your own YAML
   language: pl                # pl or en
+  # Registers or groups to leave out, for features your boiler does not have.
+  # disabled_registers: [solar, circuit_c, heat_pump]
   # slave_address: 10         # defaults to the address from the map
   read_only: false
   trailing_zero: true

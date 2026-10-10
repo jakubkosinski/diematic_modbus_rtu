@@ -41,7 +41,7 @@ class Runtime:
 def build_runtime(settings: AppSettings, discover: EntryPoints = installed_plugins) -> Runtime:
     """Create every component. Raises MapError or PluginError for unusable configuration."""
     gateway = settings.gateway
-    regmap = load_map(gateway.map, gateway.language)
+    regmap = load_map(gateway.map, gateway.language).excluding(gateway.disabled_registers)
     transport = TcpTransport(gateway.host, gateway.port, gateway.connect_timeout)
     bus = DiematicBus(
         transport,

@@ -111,6 +111,30 @@ YAML reads `off`, `on`, `yes` and `no` as booleans. Quote them when they are lab
 `{pl: Wyłączony, en: "Off"}`, `"off": frost_protection`. The loader reports a non-text label
 instead of silently accepting it.
 
+## Leaving registers out
+
+Boilers differ: yours may have no solar installation, no third circuit or no heat pump. Registers
+that do not exist usually do not answer at all. The service notices this by itself (a register
+that stays silent while the others answer is skipped for an hour and then tried again, and the log
+says so), but the cleaner fix is to list what you do not have in `disabled_registers`:
+
+```yaml
+gateway:
+  disabled_registers: [solar, circuit_c, heat_pump]
+```
+
+```bash
+DIEMATIC_DISABLED_REGISTERS=solar,circuit_c,heat_pump
+```
+
+A name is a register key, a derived sensor or thermostat key, or a **group**: `circuit_a`,
+`circuit_b`, `circuit_c`, `dhw`, `aux`, `installation`, `stop_periods`, `cascade`, `boiler`,
+`heat_pump`, `service`, `solar`, `system` in the iSystem map. A derived sensor or thermostat that
+needs a left-out register goes with it. Unknown names stop the start with a list of the groups.
+
+Left-out registers are not read, and the MQTT plugin removes their entities, and the retained
+values they left behind, from Home Assistant.
+
 ## Verifying a map on your boiler
 
 The shipped iSystem map follows the GTW-26 gateway documentation. If your converter sits

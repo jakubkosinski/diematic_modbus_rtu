@@ -18,6 +18,7 @@ value.
 | `host` | `DIEMATIC_HOST` | required | Converter address. |
 | `port` | `DIEMATIC_PORT` | required | Converter TCP port. |
 | `map` | `DIEMATIC_MAP` | `diematic_isystem` | Built-in map name or path to a YAML file. |
+| `disabled_registers` | `DIEMATIC_DISABLED_REGISTERS` | none | Registers, derived sensors, thermostats or groups to leave out, as a YAML list or a comma separated variable. See [register maps](register-maps.md#leaving-registers-out). |
 | `language` | `DIEMATIC_LANGUAGE` | `pl` | `pl` or `en`: entity names and enum values. |
 | `slave_address` | `DIEMATIC_SLAVE_ADDRESS` | from the map (10) | Regulator Modbus address, 1-247. |
 | `read_only` | `DIEMATIC_READ_ONLY` | `false` | Refuse every write. |

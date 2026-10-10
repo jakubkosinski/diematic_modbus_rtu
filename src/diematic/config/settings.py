@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from pydantic_settings import (
     BaseSettings,
+    NoDecode,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
@@ -83,6 +85,7 @@ class GatewaySettings(LayeredSettings):
     port: int = Field(ge=1, le=65535)
     slave_address: int | None = Field(default=None, ge=1, le=247)
     map: str = "diematic_isystem"
+    disabled_registers: Annotated[list[str], NoDecode] = Field(default_factory=list)
     language: Literal["pl", "en"] = "pl"
     read_only: bool = False
     trailing_zero: bool = True
@@ -95,6 +98,23 @@ class GatewaySettings(LayeredSettings):
     heartbeat_file: Path | None = None
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     bus: BusSettings = Field(default_factory=BusSettings)
+
+    @field_validator("disabled_registers", mode="before")
+    @classmethod
+    def _split_names(cls, value: object) -> object:
+        if isinstance(value, str):
+            value = value.split(",")
+        if isinstance(value, list | tuple):
+            return [str(item).strip() for item in value if str(item).strip()]
+        return value
+
+    @field_validator("disabled_registers")
+    @classmethod
+    def _valid_names(cls, names: list[str]) -> list[str]:
+        for name in names:
+            if not re.fullmatch(r"[a-z][a-z0-9_]*", name):
+                raise ValueError("register and group names are lower case words with underscores")
+        return names
 
     @field_validator("timezone")
     @classmethod

@@ -11,6 +11,7 @@ ENV_VARS = [
     "DIEMATIC_CONFIG",
     "DIEMATIC_ENABLED_PLUGINS",
     "DIEMATIC_BUS__WINDOW",
+    "DIEMATIC_DISABLED_REGISTERS",
 ]
 
 
@@ -177,3 +178,35 @@ def test_the_shipped_example_configuration_is_valid():
     assert settings.enabled_plugins == ["mqtt"]
     mqtt = MqttSettings(**settings.plugin_config["mqtt"])
     assert (mqtt.host, mqtt.qos, mqtt.discovery) == ("mosquitto", 1, True)
+
+
+def test_disabled_registers_default_to_none(tmp_path):
+    assert (
+        load_settings(write(tmp_path, "gateway: {host: h, port: 1}")).gateway.disabled_registers
+        == []
+    )
+
+
+def test_disabled_registers_can_be_a_yaml_list(tmp_path):
+    path = write(tmp_path, "gateway: {host: h, port: 1, disabled_registers: [solar, circuit_c]}")
+    assert load_settings(path).gateway.disabled_registers == ["solar", "circuit_c"]
+
+
+def test_disabled_registers_can_be_a_comma_separated_environment_variable(tmp_path, monkeypatch):
+    path = write(tmp_path, "gateway: {host: h, port: 1, disabled_registers: [from_file]}")
+    monkeypatch.setenv("DIEMATIC_DISABLED_REGISTERS", " solar, circuit_c ,,heat_pump")
+    assert load_settings(path).gateway.disabled_registers == ["solar", "circuit_c", "heat_pump"]
+
+
+def test_a_blank_disabled_registers_variable_keeps_the_file_value(tmp_path, monkeypatch):
+    path = write(tmp_path, "gateway: {host: h, port: 1, disabled_registers: [solar]}")
+    monkeypatch.setenv("DIEMATIC_DISABLED_REGISTERS", "")
+    assert load_settings(path).gateway.disabled_registers == ["solar"]
+
+
+@pytest.mark.parametrize("names", ["Solar", "bad name", "x-y", "1abc"])
+def test_malformed_register_names_are_rejected(tmp_path, names):
+    with pytest.raises(ConfigError, match="disabled_registers"):
+        load_settings(
+            write(tmp_path, f"gateway: {{host: h, port: 1, disabled_registers: ['{names}']}}")
+        )
