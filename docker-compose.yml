@@ -1,0 +1,39 @@
+services:
+  diematic:
+    build: .
+    image: diematic-modbus:latest
+    restart: unless-stopped
+    env_file: .env
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    # Optional YAML configuration and custom register maps; environment variables still win.
+    # volumes:
+    #   - ./config:/config:ro
+    # environment:
+    #   DIEMATIC_CONFIG: /config/config.yaml
+
+  # `docker compose --profile broker up` adds a local Mosquitto for trying things out.
+  mosquitto:
+    profiles: [broker]
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./docker/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  # `docker compose --profile sim up` serves a simulated boiler; point the bridge at it with
+  # DIEMATIC_HOST=simulator and DIEMATIC_PORT=5020 in .env.
+  simulator:
+    profiles: [sim]
+    build: .
+    image: diematic-modbus:latest
+    restart: unless-stopped
+    command: ["simulate", "--host", "0.0.0.0", "--port", "5020"]
+    healthcheck:
+      disable: true
