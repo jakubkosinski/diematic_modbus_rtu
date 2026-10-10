@@ -19,7 +19,8 @@ class CodecError(ValueError):
 
 
 class Codec(Protocol):
-    width: int
+    @property
+    def width(self) -> int: ...
 
     def decode(self, words: Sequence[int]) -> Value: ...
 
