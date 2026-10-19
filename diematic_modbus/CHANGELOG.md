@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3
+
+- The *Boiler error* sensor now shows an unknown state when the boiler reports a code that is not
+  in the error list, instead of keeping the previous error on screen.
+
 ## 0.2.2
 
 - The day and night DHW temperature settings now go down to 10 °C, as on the boiler itself; they
