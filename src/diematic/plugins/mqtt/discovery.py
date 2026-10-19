@@ -181,6 +181,7 @@ class DiscoveryBuilder:
         if register.type == "enum":
             fields["device_class"] = "enum"
             fields["options"] = list((register.values or {}).values())
+            fields["value_template"] = _NUMERIC_TEMPLATE
         else:
             fields.update(
                 unit_of_measurement=register.unit,

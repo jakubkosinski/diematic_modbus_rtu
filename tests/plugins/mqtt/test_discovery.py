@@ -101,6 +101,7 @@ def test_enum_measure_becomes_an_enum_sensor_with_its_options():
     sensor = entity(messages, "sensor", "season_mode")
     assert sensor["device_class"] == "enum"
     assert sensor["options"] == ["Summer", "Winter"]
+    assert sensor["value_template"] == "{{ value if value else none }}"
     assert "unit_of_measurement" not in sensor
 
 
